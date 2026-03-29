@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Users, Heart, Music2, Settings, Search, X, Check, ArrowLeft, Trash2, Share2, Download, MessageCircle, Edit3 } from 'lucide-react';
+import { Plus, Users, Heart, Music2, Settings, Search, X, Check, ArrowLeft, Trash2, Share2, Download, MessageCircle, Edit3, Play, Pause } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 
 interface Song {
@@ -62,7 +62,6 @@ const MOCK_FRIENDS: FriendPlaylist[] = [
 export default function App() {
   const [view, setView] = useState<'landing' | 'selection' | 'preview' | 'share' | 'friends'>('landing');
   const [bgImage, setBgImage] = useState('https://images.unsplash.com/photo-1514525253361-bee8718a340b?auto=format&fit=crop&q=80&w=1920');
-  const [showSettings, setShowSettings] = useState(false);
   
   // User Info
   const [wechatName, setWechatName] = useState<string | null>(null);
@@ -73,6 +72,34 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [addedSongs, setAddedSongs] = useState<Song[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+
+  // Player State
+  const [playingSong, setPlayingSong] = useState<Song | null>(null);
+  const [playProgress, setPlayProgress] = useState(0);
+
+  // Auth State
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
+
+  useEffect(() => {
+    // Simulate automatic auth popup on startup
+    const timer = setTimeout(() => {
+      if (!wechatName) {
+        setShowAuthPopup(true);
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [wechatName]);
+
+  useEffect(() => {
+    let interval: any;
+    if (playingSong) {
+      setPlayProgress(0);
+      interval = setInterval(() => {
+        setPlayProgress(prev => (prev >= 100 ? 0 : prev + 2));
+      }, 200);
+    }
+    return () => clearInterval(interval);
+  }, [playingSong]);
 
   useEffect(() => {
     if (toast) {
@@ -123,6 +150,50 @@ export default function App() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black" />
       </div>
 
+      {/* Auth Popup */}
+      <AnimatePresence>
+        {showAuthPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              className="bg-zinc-900 border border-white/10 p-8 rounded-[32px] w-full max-w-xs text-center space-y-6 shadow-2xl"
+            >
+              <div className="w-16 h-16 bg-[#07C160] rounded-full flex items-center justify-center mx-auto mb-2">
+                <MessageCircle className="w-8 h-8 text-white" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold">微信授权</h3>
+                <p className="text-sm text-white/60">申请获取您的公开信息（昵称、头像等）</p>
+              </div>
+              <div className="flex flex-col gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setWechatName('陈二忠');
+                    setShowAuthPopup(false);
+                    setToast('授权成功');
+                  }}
+                  className="w-full bg-[#07C160] text-white py-3.5 rounded-2xl font-bold text-lg active:scale-95 transition-transform"
+                >
+                  允许
+                </button>
+                <button
+                  onClick={() => setShowAuthPopup(false)}
+                  className="w-full bg-white/5 text-white/40 py-3 rounded-2xl font-medium active:scale-95 transition-transform"
+                >
+                  拒绝
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toast && (
@@ -158,9 +229,10 @@ export default function App() {
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2, duration: 0.6 }}
-                  className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-4"
+                  className="inline-flex items-center justify-center w-24 h-24 mb-4 border border-white/20 rounded-full backdrop-blur-sm bg-white/5"
                 >
-                  <Music2 className="w-8 h-8 text-white/80" />
+                  {/* Wireframe Icon Style */}
+                  <Music2 className="w-12 h-12 text-white/80" strokeWidth={1} />
                 </motion.div>
                 
                 <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl italic serif">
@@ -176,29 +248,14 @@ export default function App() {
 
               {/* Action Buttons */}
               <div className="flex flex-col gap-4 w-full pt-8">
-                {wechatName ? (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setView('selection')}
-                    className="flex items-center justify-center gap-3 bg-white text-black py-4 px-8 rounded-2xl font-semibold text-lg transition-colors hover:bg-white/90"
-                  >
-                    新的歌单
-                  </motion.button>
-                ) : (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      setWechatName('陈二忠');
-                      setToast('微信授权成功');
-                    }}
-                    className="flex items-center justify-center gap-3 bg-[#07C160] text-white py-4 px-8 rounded-2xl font-semibold text-lg transition-colors hover:bg-[#06ae56]"
-                  >
-                    <MessageCircle className="w-6 h-6" />
-                    微信授权登录
-                  </motion.button>
-                )}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setView('selection')}
+                  className="flex items-center justify-center gap-3 bg-white text-black py-4 px-8 rounded-2xl font-semibold text-lg transition-colors hover:bg-white/90"
+                >
+                  新的歌单
+                </motion.button>
 
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -220,16 +277,6 @@ export default function App() {
                 </motion.button>
               </div>
             </motion.div>
-
-            {/* Footer / Settings Toggle */}
-            <div className="absolute bottom-8 left-0 right-0 flex justify-center">
-              <button 
-                onClick={() => setShowSettings(true)}
-                className="p-2 text-white/40 hover:text-white/80 transition-colors"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-            </div>
           </motion.main>
         )}
 
@@ -245,7 +292,10 @@ export default function App() {
             <header className="p-4 border-b border-white/10 flex items-center justify-between sticky top-0 z-20 bg-black/40 backdrop-blur-md">
               <div className="flex items-center gap-3">
                 <button 
-                  onClick={() => setView('landing')}
+                  onClick={() => {
+                    setPlayingSong(null);
+                    setView('landing');
+                  }}
                   className="p-1 -ml-1 text-white/60 hover:text-white transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5" />
@@ -253,7 +303,14 @@ export default function App() {
                 <h2 className="text-lg font-bold tracking-tight">定制你的歌单</h2>
               </div>
               <button 
-                onClick={() => addedSongs.length > 0 ? setView('preview') : setToast('请先添加至少一首歌曲')}
+                onClick={() => {
+                  if (addedSongs.length > 0) {
+                    setPlayingSong(null);
+                    setView('preview');
+                  } else {
+                    setToast('请先添加至少一首歌曲');
+                  }
+                }}
                 className="bg-white text-black px-4 py-1.5 rounded-full text-sm font-bold hover:bg-white/90 transition-colors"
               >
                 完成
@@ -308,16 +365,28 @@ export default function App() {
                           <h3 className="font-semibold truncate text-sm">{song.title}</h3>
                           <p className="text-[11px] text-white/40 truncate">{song.artist}</p>
                         </div>
-                        <button 
-                          onClick={() => toggleSong(song)}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border ${
-                            isAdded 
-                              ? 'bg-white border-white text-black' 
-                              : 'bg-transparent border-white/20 text-white/40 hover:border-white/40 hover:text-white'
-                          }`}
-                        >
-                          {isAdded ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => setPlayingSong(playingSong?.id === song.id ? null : song)}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border ${
+                              playingSong?.id === song.id 
+                                ? 'bg-white/20 border-white text-white' 
+                                : 'bg-transparent border-white/10 text-white/30 hover:border-white/40 hover:text-white'
+                            }`}
+                          >
+                            {playingSong?.id === song.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                          </button>
+                          <button 
+                            onClick={() => toggleSong(song)}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border ${
+                              isAdded 
+                                ? 'bg-white border-white text-black' 
+                                : 'bg-transparent border-white/20 text-white/40 hover:border-white/40 hover:text-white'
+                            }`}
+                          >
+                            {isAdded ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </motion.div>
                     );
                   })
@@ -354,17 +423,68 @@ export default function App() {
                           <h3 className="font-medium truncate text-xs">{song.title}</h3>
                           <p className="text-[10px] text-white/30 truncate">{song.artist}</p>
                         </div>
-                        <button 
-                          onClick={() => removeSong(song.id)}
-                          className="w-7 h-7 rounded-md flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-all"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => setPlayingSong(playingSong?.id === song.id ? null : song)}
+                            className={`w-7 h-7 rounded-md flex items-center justify-center transition-all ${
+                              playingSong?.id === song.id 
+                                ? 'bg-white/20 text-white' 
+                                : 'text-white/20 hover:text-white hover:bg-white/10'
+                            }`}
+                          >
+                            {playingSong?.id === song.id ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                          </button>
+                          <button 
+                            onClick={() => removeSong(song.id)}
+                            className="w-7 h-7 rounded-md flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-all"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </motion.div>
                     ))
                   )}
                 </div>
               </div>
+
+              {/* Mini Player */}
+              <AnimatePresence>
+                {playingSong && (
+                  <motion.div
+                    initial={{ y: 100 }}
+                    animate={{ y: 0 }}
+                    exit={{ y: 100 }}
+                    className="bg-zinc-900/95 backdrop-blur-xl border-t border-white/10 px-4 py-3 flex flex-col gap-2 z-30"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={playingSong.albumArt} 
+                        className="w-10 h-10 rounded-lg shadow-lg animate-pulse" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold truncate">{playingSong.title}</div>
+                        <div className="text-[10px] text-white/40 truncate uppercase tracking-wider">{playingSong.artist}</div>
+                      </div>
+                      <button 
+                        onClick={() => setPlayingSong(null)}
+                        className="p-2 text-white/40 hover:text-white"
+                      >
+                        <Pause className="w-5 h-5" />
+                      </button>
+                    </div>
+                    {/* Progress Bar */}
+                    <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div 
+                        className="h-full bg-white"
+                        initial={{ width: '0%' }}
+                        animate={{ width: `${playProgress}%` }}
+                        transition={{ duration: 0.2, ease: "linear" }}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.main>
         )}
@@ -582,69 +702,6 @@ export default function App() {
               <div className="py-12 text-center text-white/20 text-xs">没有更多朋友的歌单了</div>
             </div>
           </motion.main>
-        )}
-      </AnimatePresence>
-
-      {/* Settings Modal (Simplified for Background Config) */}
-      <AnimatePresence>
-        {showSettings && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-zinc-900 border border-white/10 p-8 rounded-3xl w-full max-w-md space-y-6"
-            >
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">配置背景图</h2>
-                <button 
-                  onClick={() => setShowSettings(false)}
-                  className="text-white/40 hover:text-white"
-                >
-                  关闭
-                </button>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm text-white/60">图片 URL</label>
-                <input 
-                  type="text" 
-                  value={bgImage}
-                  onChange={(e) => setBgImage(e.target.value)}
-                  placeholder="输入图片链接..."
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-white/40 transition-colors"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  'https://images.unsplash.com/photo-1514525253361-bee8718a340b?auto=format&fit=crop&q=80&w=400',
-                  'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=400',
-                  'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&q=80&w=400',
-                ].map((url) => (
-                  <button 
-                    key={url}
-                    onClick={() => setBgImage(url)}
-                    className="aspect-video rounded-lg overflow-hidden border border-white/10 hover:border-white/40 transition-all"
-                  >
-                    <img src={url} alt="preset" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  </button>
-                ))}
-              </div>
-
-              <button 
-                onClick={() => setShowSettings(false)}
-                className="w-full bg-white text-black py-3 rounded-xl font-semibold"
-              >
-                保存配置
-              </button>
-            </motion.div>
-          </motion.div>
         )}
       </AnimatePresence>
     </div>
