@@ -34,7 +34,6 @@ export class Playlist {
 
   @OneToMany(() => PlaylistSong, (ps) => ps.playlist, {
     cascade: true,
-    eager: true,
   })
   playlistSongs: PlaylistSong[];
 

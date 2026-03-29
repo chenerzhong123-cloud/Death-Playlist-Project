@@ -31,92 +31,52 @@ export class SeedService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    const songCount = await this.songRepo.count();
-    if (songCount > 0) return; // Already seeded
+    if ((await this.songRepo.count()) > 0) return;
 
     console.log('🌱 Seeding database...');
 
-    // Seed songs
-    const songs: Song[] = [];
-    for (const s of SEED_SONGS) {
-      const song = this.songRepo.create(s);
-      songs.push(await this.songRepo.save(song));
-    }
-
-    // Seed users (matching frontend mock friends)
-    const userAqiang = this.userRepo.create({
-      wechatOpenId: 'mock_阿强',
-      nickname: '阿强',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-    });
-    const userXiaoya = this.userRepo.create({
-      wechatOpenId: 'mock_小雅',
-      nickname: '小雅',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
-    });
-    const userLaoli = this.userRepo.create({
-      wechatOpenId: 'mock_老李',
-      nickname: '老李',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=George',
-    });
-    // Default test user
-    const userChen = this.userRepo.create({
-      wechatOpenId: 'mock_陈二忠',
-      nickname: '陈二忠',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ChenErzhong',
-    });
+    const songs = await this.songRepo.save(
+      SEED_SONGS.map((s) => this.songRepo.create(s)),
+    );
 
     const [u1, u2, u3, u4] = await this.userRepo.save([
-      userAqiang,
-      userXiaoya,
-      userLaoli,
-      userChen,
+      this.userRepo.create({ wechatOpenId: 'mock_阿强', nickname: '阿强', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' }),
+      this.userRepo.create({ wechatOpenId: 'mock_小雅', nickname: '小雅', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka' }),
+      this.userRepo.create({ wechatOpenId: 'mock_老李', nickname: '老李', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=George' }),
+      this.userRepo.create({ wechatOpenId: 'mock_陈二忠', nickname: '陈二忠', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ChenErzhong' }),
     ]);
 
-    // Seed playlists for friends
-    const p1 = this.playlistRepo.create({
-      userId: u1.id,
-      intro: '最后一程，想听点燥的，别哭。',
-    });
-    const savedP1 = await this.playlistRepo.save(p1);
+    const pl1 = await this.playlistRepo.save(
+      this.playlistRepo.create({ userId: u1.id, intro: '最后一程，想听点燥的，别哭。' }),
+    );
     await this.psRepo.save([
-      this.psRepo.create({ playlistId: savedP1.id, songId: songs[0].id, sortOrder: 0 }),
-      this.psRepo.create({ playlistId: savedP1.id, songId: songs[1].id, sortOrder: 1 }),
-      this.psRepo.create({ playlistId: savedP1.id, songId: songs[7].id, sortOrder: 2 }),
+      this.psRepo.create({ playlistId: pl1.id, songId: songs[0].id, sortOrder: 0 }),
+      this.psRepo.create({ playlistId: pl1.id, songId: songs[1].id, sortOrder: 1 }),
+      this.psRepo.create({ playlistId: pl1.id, songId: songs[7].id, sortOrder: 2 }),
     ]);
 
-    const p2 = this.playlistRepo.create({
-      userId: u2.id,
-      intro: '安静地离开，像风一样自由。',
-    });
-    const savedP2 = await this.playlistRepo.save(p2);
+    const pl2 = await this.playlistRepo.save(
+      this.playlistRepo.create({ userId: u2.id, intro: '安静地离开，像风一样自由。' }),
+    );
     await this.psRepo.save([
-      this.psRepo.create({ playlistId: savedP2.id, songId: songs[2].id, sortOrder: 0 }),
-      this.psRepo.create({ playlistId: savedP2.id, songId: songs[5].id, sortOrder: 1 }),
+      this.psRepo.create({ playlistId: pl2.id, songId: songs[2].id, sortOrder: 0 }),
+      this.psRepo.create({ playlistId: pl2.id, songId: songs[5].id, sortOrder: 1 }),
     ]);
 
-    const p3 = this.playlistRepo.create({
-      userId: u3.id,
-      intro: '这辈子值了，下辈子再见。',
-    });
-    const savedP3 = await this.playlistRepo.save(p3);
+    const pl3 = await this.playlistRepo.save(
+      this.playlistRepo.create({ userId: u3.id, intro: '这辈子值了，下辈子再见。' }),
+    );
     await this.psRepo.save([
-      this.psRepo.create({ playlistId: savedP3.id, songId: songs[3].id, sortOrder: 0 }),
-      this.psRepo.create({ playlistId: savedP3.id, songId: songs[4].id, sortOrder: 1 }),
-      this.psRepo.create({ playlistId: savedP3.id, songId: songs[9].id, sortOrder: 2 }),
+      this.psRepo.create({ playlistId: pl3.id, songId: songs[3].id, sortOrder: 0 }),
+      this.psRepo.create({ playlistId: pl3.id, songId: songs[4].id, sortOrder: 1 }),
+      this.psRepo.create({ playlistId: pl3.id, songId: songs[9].id, sortOrder: 2 }),
     ]);
 
-    // Seed friendships: 陈二忠 is friends with 阿强, 小雅, 老李
-    const friendPairs = [
-      { userId: u4.id, friendId: u1.id },
-      { userId: u1.id, friendId: u4.id },
-      { userId: u4.id, friendId: u2.id },
-      { userId: u2.id, friendId: u4.id },
-      { userId: u4.id, friendId: u3.id },
-      { userId: u3.id, friendId: u4.id },
-    ];
     await this.friendshipRepo.save(
-      friendPairs.map((fp) => this.friendshipRepo.create(fp)),
+      [0, 1, 2].flatMap((i) => [
+        this.friendshipRepo.create({ userId: u4.id, friendId: [u1, u2, u3][i].id }),
+        this.friendshipRepo.create({ userId: [u1, u2, u3][i].id, friendId: u4.id }),
+      ]),
     );
 
     console.log('✅ Seed complete: 10 songs, 4 users, 3 playlists, friendships');

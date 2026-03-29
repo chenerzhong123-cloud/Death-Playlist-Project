@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Song } from './song.entity';
@@ -24,14 +24,16 @@ export class SongsService {
   }
 
   async findById(id: string): Promise<Song> {
-    return this.songRepo.findOne({ where: { id } });
+    const song = await this.songRepo.findOne({ where: { id } });
+    if (!song) throw new NotFoundException('歌曲不存在');
+    return song;
   }
 
   async findByExternalId(externalId: string): Promise<Song | null> {
     return this.songRepo.findOne({ where: { externalId } });
   }
 
-  async findOrCreate(songData: Partial<Song>): Promise<Song> {
+  async findOrCreate(songData: { externalId: string; title: string; artist: string; albumArt?: string }): Promise<Song> {
     let song = await this.findByExternalId(songData.externalId);
     if (!song) {
       song = this.songRepo.create(songData);

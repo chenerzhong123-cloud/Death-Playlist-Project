@@ -1,22 +1,23 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Friendship } from './friendship.entity';
-import { UsersService } from '../users/users.service';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class FriendsService {
   constructor(
     @InjectRepository(Friendship)
     private friendshipRepo: Repository<Friendship>,
-    private usersService: UsersService,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
   ) {}
 
   async addFriend(userId: string, friendId: string): Promise<Friendship> {
     if (userId === friendId) {
-      throw new Error('不能添加自己为好友');
+      throw new BadRequestException('不能添加自己为好友');
     }
-    // Check if already friends
+
     const existing = await this.friendshipRepo.findOne({
       where: { userId, friendId },
     });
@@ -25,7 +26,6 @@ export class FriendsService {
     const friendship = this.friendshipRepo.create({ userId, friendId });
     await this.friendshipRepo.save(friendship);
 
-    // Create reverse friendship
     const reverse = this.friendshipRepo.create({
       userId: friendId,
       friendId: userId,
@@ -47,10 +47,11 @@ export class FriendsService {
       where: { userId },
     });
     const friendIds = friendships.map((f) => f.friendId);
+    if (friendIds.length === 0) return [];
 
-    const friends = await Promise.all(
-      friendIds.map((id) => this.usersService.findById(id)),
-    );
+    const friends = await this.userRepo.find({
+      where: { id: In(friendIds) },
+    });
     return friends.map((f) => ({
       id: f.id,
       nickname: f.nickname,
