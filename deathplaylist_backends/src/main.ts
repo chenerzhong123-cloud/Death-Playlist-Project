@@ -7,13 +7,13 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:5173'],
-    credentials: true,
-  });
+  const origins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',')
+    : ['http://localhost:3000', 'http://localhost:5173'];
+  app.enableCors({ origin: origins, credentials: true });
 
   const port = process.env.PORT || 3001;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   console.log(`🪦 Death Playlist Backend running on http://localhost:${port}/api`);
 }
 bootstrap();
