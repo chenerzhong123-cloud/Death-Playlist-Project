@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Plus, Users, Heart, Music2, Settings, Search, X, Check, ArrowLeft, Trash2, Share2, Download, MessageCircle, Edit3, Play, Pause } from 'lucide-react';
+import { Plus, Users, Heart, Music2, Settings, Search, X, Check, ArrowLeft, Trash2, Share2, Download, MessageCircle, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 
 // API Configuration
@@ -95,9 +95,6 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
 
   // Player State
-  const [playingSong, setPlayingSong] = useState<Song | null>(null);
-  const [playProgress, setPlayProgress] = useState(0);
-
   // Auth State
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [authNickname, setAuthNickname] = useState('');
@@ -163,17 +160,6 @@ export default function App() {
       setToast('登录失败，请重试');
     }
   };
-
-  useEffect(() => {
-    let interval: any;
-    if (playingSong) {
-      setPlayProgress(0);
-      interval = setInterval(() => {
-        setPlayProgress(prev => (prev >= 100 ? 0 : prev + 2));
-      }, 200);
-    }
-    return () => clearInterval(interval);
-  }, [playingSong]);
 
   useEffect(() => {
     if (toast) {
@@ -389,7 +375,6 @@ export default function App() {
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => {
-                    setPlayingSong(null);
                     setView('landing');
                   }}
                   className="p-1 -ml-1 text-white/60 hover:text-white transition-colors"
@@ -401,7 +386,6 @@ export default function App() {
               <button 
                 onClick={() => {
                   if (addedSongs.length > 0) {
-                    setPlayingSong(null);
                     setView('preview');
                   } else {
                     setToast('请先添加至少一首歌曲');
@@ -462,21 +446,11 @@ export default function App() {
                           <p className="text-[11px] text-white/40 truncate">{song.artist}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => setPlayingSong(playingSong?.id === song.id ? null : song)}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border ${
-                              playingSong?.id === song.id 
-                                ? 'bg-white/20 border-white text-white' 
-                                : 'bg-transparent border-white/10 text-white/30 hover:border-white/40 hover:text-white'
-                            }`}
-                          >
-                            {playingSong?.id === song.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-                          </button>
-                          <button 
+                          <button
                             onClick={() => toggleSong(song)}
                             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border ${
-                              isAdded 
-                                ? 'bg-white border-white text-black' 
+                              isAdded
+                                ? 'bg-white border-white text-black'
                                 : 'bg-transparent border-white/20 text-white/40 hover:border-white/40 hover:text-white'
                             }`}
                           >
@@ -520,17 +494,7 @@ export default function App() {
                           <p className="text-[10px] text-white/30 truncate">{song.artist}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => setPlayingSong(playingSong?.id === song.id ? null : song)}
-                            className={`w-7 h-7 rounded-md flex items-center justify-center transition-all ${
-                              playingSong?.id === song.id 
-                                ? 'bg-white/20 text-white' 
-                                : 'text-white/20 hover:text-white hover:bg-white/10'
-                            }`}
-                          >
-                            {playingSong?.id === song.id ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-                          </button>
-                          <button 
+                          <button
                             onClick={() => removeSong(song.id)}
                             className="w-7 h-7 rounded-md flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-all"
                           >
@@ -543,44 +507,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Mini Player */}
-              <AnimatePresence>
-                {playingSong && (
-                  <motion.div
-                    initial={{ y: 100 }}
-                    animate={{ y: 0 }}
-                    exit={{ y: 100 }}
-                    className="bg-zinc-900/95 backdrop-blur-xl border-t border-white/10 px-4 py-3 flex flex-col gap-2 z-30"
-                  >
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={playingSong.albumArt} 
-                        className="w-10 h-10 rounded-lg shadow-lg animate-pulse" 
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold truncate">{playingSong.title}</div>
-                        <div className="text-[10px] text-white/40 truncate uppercase tracking-wider">{playingSong.artist}</div>
-                      </div>
-                      <button 
-                        onClick={() => setPlayingSong(null)}
-                        className="p-2 text-white/40 hover:text-white"
-                      >
-                        <Pause className="w-5 h-5" />
-                      </button>
-                    </div>
-                    {/* Progress Bar */}
-                    <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div 
-                        className="h-full bg-white"
-                        initial={{ width: '0%' }}
-                        animate={{ width: `${playProgress}%` }}
-                        transition={{ duration: 0.2, ease: "linear" }}
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Mini Player removed — music playback not available */}
             </div>
           </motion.main>
         )}
