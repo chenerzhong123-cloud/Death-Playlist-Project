@@ -1,12 +1,16 @@
 import { Controller, Post, Body, HttpCode } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { IsString, IsNotEmpty, Length } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, Length } from 'class-validator';
 
 class WechatLoginDto {
   @IsString()
   @IsNotEmpty()
-  @Length(1, 50)
-  nickname: string;
+  code: string;
+
+  @IsString()
+  @IsOptional()
+  @Length(0, 50)
+  nickname?: string;
 }
 
 @Controller('auth')
@@ -15,7 +19,12 @@ export class AuthController {
 
   @Post('wechat')
   @HttpCode(200)
-  async mockWechatLogin(@Body() dto: WechatLoginDto) {
-    return this.authService.mockWechatLogin(dto.nickname);
+  async wechatLogin(@Body() dto: WechatLoginDto) {
+    // If code looks like a mock code (short string or 'mock_'), use mock login
+    if (dto.code.startsWith('mock_') || dto.code.length < 10) {
+      const nickname = dto.nickname || dto.code;
+      return this.authService.mockLogin(nickname);
+    }
+    return this.authService.wechatLogin(dto.code);
   }
 }

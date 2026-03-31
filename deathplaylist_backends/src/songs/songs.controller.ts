@@ -17,6 +17,8 @@ export class SongsController {
       title: s.title,
       artist: s.artist,
       albumArt: s.albumArt,
+      album: s.album,
+      duration: s.duration,
     }));
   }
 }
