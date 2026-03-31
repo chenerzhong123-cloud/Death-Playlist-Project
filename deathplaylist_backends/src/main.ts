@@ -12,7 +12,7 @@ async function bootstrap() {
     : ['http://localhost:3000', 'http://localhost:5173'];
   app.enableCors({ origin: origins, credentials: true });
 
-  const port = process.env.PORT || 3001;
+  const port = process.env.PORT || 80;
   await app.listen(port, '0.0.0.0');
   console.log(`🪦 Death Playlist Backend running on http://localhost:${port}/api`);
 }
