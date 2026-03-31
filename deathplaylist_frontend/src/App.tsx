@@ -3,15 +3,35 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Plus, Users, Heart, Music2, Settings, Search, X, Check, ArrowLeft, Trash2, Share2, Download, MessageCircle, Edit3, Play, Pause } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
+
+// API Configuration
+const API_BASE = 'https://express-19oq-240531-4-1417659746.sh.run.tcloudbase.com/api';
+
+async function apiFetch(path: string, options?: RequestInit) {
+  const token = localStorage.getItem('jwt');
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers: { ...headers, ...(options?.headers as Record<string, string>) } });
+  if (!res.ok) throw new Error(`API Error: ${res.status}`);
+  return res.json();
+}
 
 interface Song {
   id: string;
   title: string;
   artist: string;
   albumArt: string;
+  album?: string;
+  duration?: number;
+}
+
+interface AuthUser {
+  id: string;
+  nickname: string;
+  avatar: string;
 }
 
 interface FriendPlaylist {
@@ -22,40 +42,38 @@ interface FriendPlaylist {
   songs: Song[];
 }
 
-const MOCK_SONGS: Song[] = [
-  { id: '1', title: 'Bohemian Rhapsody', artist: 'Queen', albumArt: 'https://picsum.photos/seed/queen/100/100' },
-  { id: '2', title: 'Stairway to Heaven', artist: 'Led Zeppelin', albumArt: 'https://picsum.photos/seed/led/100/100' },
-  { id: '3', title: 'Imagine', artist: 'John Lennon', albumArt: 'https://picsum.photos/seed/lennon/100/100' },
-  { id: '4', title: 'Hotel California', artist: 'Eagles', albumArt: 'https://picsum.photos/seed/eagles/100/100' },
-  { id: '5', title: 'Wish You Were Here', artist: 'Pink Floyd', albumArt: 'https://picsum.photos/seed/floyd/100/100' },
-  { id: '6', title: 'Yesterday', artist: 'The Beatles', albumArt: 'https://picsum.photos/seed/beatles/100/100' },
-  { id: '7', title: 'Hallelujah', artist: 'Jeff Buckley', albumArt: 'https://picsum.photos/seed/jeff/100/100' },
-  { id: '8', title: 'Purple Rain', artist: 'Prince', albumArt: 'https://picsum.photos/seed/prince/100/100' },
-  { id: '9', title: 'Life on Mars?', artist: 'David Bowie', albumArt: 'https://picsum.photos/seed/bowie/100/100' },
-  { id: '10', title: 'Bridge Over Troubled Water', artist: 'Simon & Garfunkel', albumArt: 'https://picsum.photos/seed/simon/100/100' },
-];
-
 const MOCK_FRIENDS: FriendPlaylist[] = [
-  { 
-    id: 'f1', 
-    name: '阿强', 
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', 
-    intro: '最后一程，想听点燥的，别哭。', 
-    songs: [MOCK_SONGS[0], MOCK_SONGS[1], MOCK_SONGS[7]] 
+  {
+    id: 'f1',
+    name: '阿强',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+    intro: '最后一程，想听点燥的，别哭。',
+    songs: [
+      { id: '1', title: 'Bohemian Rhapsody', artist: 'Queen', albumArt: 'https://picsum.photos/seed/queen/100/100' },
+      { id: '2', title: 'Stairway to Heaven', artist: 'Led Zeppelin', albumArt: 'https://picsum.photos/seed/led/100/100' },
+      { id: '8', title: 'Purple Rain', artist: 'Prince', albumArt: 'https://picsum.photos/seed/prince/100/100' },
+    ],
   },
-  { 
-    id: 'f2', 
-    name: '小雅', 
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka', 
-    intro: '安静地离开，像风一样自由。', 
-    songs: [MOCK_SONGS[2], MOCK_SONGS[5]] 
+  {
+    id: 'f2',
+    name: '小雅',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
+    intro: '安静地离开，像风一样自由。',
+    songs: [
+      { id: '3', title: 'Imagine', artist: 'John Lennon', albumArt: 'https://picsum.photos/seed/lennon/100/100' },
+      { id: '6', title: 'Yesterday', artist: 'The Beatles', albumArt: 'https://picsum.photos/seed/beatles/100/100' },
+    ],
   },
-  { 
-    id: 'f3', 
-    name: '老李', 
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=George', 
-    intro: '这辈子值了，下辈子再见。', 
-    songs: [MOCK_SONGS[3], MOCK_SONGS[4], MOCK_SONGS[9]] 
+  {
+    id: 'f3',
+    name: '老李',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=George',
+    intro: '这辈子值了，下辈子再见。',
+    songs: [
+      { id: '4', title: 'Hotel California', artist: 'Eagles', albumArt: 'https://picsum.photos/seed/eagles/100/100' },
+      { id: '5', title: 'Wish You Were Here', artist: 'Pink Floyd', albumArt: 'https://picsum.photos/seed/floyd/100/100' },
+      { id: '10', title: 'Bridge Over Troubled Water', artist: 'Simon & Garfunkel', albumArt: 'https://picsum.photos/seed/simon/100/100' },
+    ],
   },
 ];
 
@@ -64,12 +82,15 @@ export default function App() {
   const [bgImage, setBgImage] = useState('https://images.unsplash.com/photo-1514525253361-bee8718a340b?auto=format&fit=crop&q=80&w=1920');
   
   // User Info
-  const [wechatName, setWechatName] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [playlistIntro, setPlaylistIntro] = useState('');
   const [isEditingIntro, setIsEditingIntro] = useState(false);
 
   // Music Selection State
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Song[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [addedSongs, setAddedSongs] = useState<Song[]>([]);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -79,16 +100,69 @@ export default function App() {
 
   // Auth State
   const [showAuthPopup, setShowAuthPopup] = useState(false);
+  const [authNickname, setAuthNickname] = useState('');
 
+  // Auto-login on mount
   useEffect(() => {
-    // Simulate automatic auth popup on startup
-    const timer = setTimeout(() => {
-      if (!wechatName) {
-        setShowAuthPopup(true);
+    const doLogin = async () => {
+      try {
+        // Check stored JWT first
+        const storedJwt = localStorage.getItem('jwt');
+        if (storedJwt) {
+          try {
+            const profile = await apiFetch('/users/me');
+            setUser({ id: profile.id, nickname: profile.nickname, avatar: profile.avatar });
+            setAuthLoading(false);
+            return;
+          } catch {
+            localStorage.removeItem('jwt');
+          }
+        }
+
+        // Try wxCode from URL (passed by mini program)
+        const params = new URLSearchParams(window.location.search);
+        const wxCode = params.get('wxCode');
+        if (wxCode) {
+          try {
+            const data = await apiFetch('/auth/wechat', {
+              method: 'POST',
+              body: JSON.stringify({ code: wxCode }),
+            });
+            localStorage.setItem('jwt', data.accessToken);
+            setUser(data.user);
+            // Clean URL parameter
+            window.history.replaceState({}, '', window.location.pathname);
+            setAuthLoading(false);
+            return;
+          } catch {
+            // Code login failed, show popup
+          }
+        }
+
+        // No auth available — show popup after brief delay
+        setTimeout(() => setShowAuthPopup(true), 800);
+      } finally {
+        setAuthLoading(false);
       }
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [wechatName]);
+    };
+    doLogin();
+  }, []);
+
+  const handleLogin = async () => {
+    try {
+      const nickname = authNickname.trim() || '微信用户';
+      const data = await apiFetch('/auth/wechat', {
+        method: 'POST',
+        body: JSON.stringify({ code: `mock_${nickname}`, nickname }),
+      });
+      localStorage.setItem('jwt', data.accessToken);
+      setUser(data.user);
+      setShowAuthPopup(false);
+      setToast('登录成功');
+    } catch {
+      setToast('登录失败，请重试');
+    }
+  };
 
   useEffect(() => {
     let interval: any;
@@ -108,13 +182,30 @@ export default function App() {
     }
   }, [toast]);
 
-  const filteredSongs = useMemo(() => {
-    if (!searchQuery.trim()) return MOCK_SONGS;
-    return MOCK_SONGS.filter(song => 
-      song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      song.artist.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery]);
+  // Song search via backend API
+  const searchSongs = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    try {
+      const data = await apiFetch(`/songs/search?q=${encodeURIComponent(query)}&limit=20`);
+      setSearchResults(data);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => searchSongs(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchSongs]);
+
+  const filteredSongs = searchLoading ? [] : (searchQuery.trim() ? searchResults : []);
 
   const toggleSong = (song: Song) => {
     setAddedSongs(prev => {
@@ -168,25 +259,30 @@ export default function App() {
                 <MessageCircle className="w-8 h-8 text-white" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-bold">微信授权</h3>
-                <p className="text-sm text-white/60">申请获取您的公开信息（昵称、头像等）</p>
+                <h3 className="text-xl font-bold">设置昵称</h3>
+                <p className="text-sm text-white/60">输入你的昵称开始使用</p>
               </div>
+              <input
+                type="text"
+                value={authNickname}
+                onChange={(e) => setAuthNickname(e.target.value)}
+                placeholder="输入昵称"
+                maxLength={15}
+                className="w-full bg-white/10 border border-white/20 rounded-xl py-3 px-4 text-center text-sm outline-none focus:border-white/40"
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              />
               <div className="flex flex-col gap-3 pt-2">
                 <button
-                  onClick={() => {
-                    setWechatName('陈二忠');
-                    setShowAuthPopup(false);
-                    setToast('授权成功');
-                  }}
+                  onClick={handleLogin}
                   className="w-full bg-[#07C160] text-white py-3.5 rounded-2xl font-bold text-lg active:scale-95 transition-transform"
                 >
-                  允许
+                  开始使用
                 </button>
                 <button
                   onClick={() => setShowAuthPopup(false)}
                   className="w-full bg-white/5 text-white/40 py-3 rounded-2xl font-medium active:scale-95 transition-transform"
                 >
-                  拒绝
+                  暂不登录
                 </button>
               </div>
             </motion.div>
@@ -501,7 +597,7 @@ export default function App() {
               {/* Preview Header */}
               <div className="text-center space-y-4">
                 <h1 className="text-3xl font-bold tracking-tight italic serif">
-                  {wechatName || '用户'}的死亡歌单
+                  {user?.nickname || '用户'}的死亡歌单
                 </h1>
                 <div className="relative inline-block w-full max-w-xs">
                   {isEditingIntro ? (
@@ -593,7 +689,7 @@ export default function App() {
               {/* Card Content - Matching Preview Page */}
               <div className="relative p-8 flex flex-col space-y-6">
                 <div className="text-center space-y-3">
-                  <h2 className="text-2xl font-bold italic serif">{wechatName || '用户'}的死亡歌单</h2>
+                  <h2 className="text-2xl font-bold italic serif">{user?.nickname || '用户'}的死亡歌单</h2>
                   <p className="text-xs text-white/70 italic px-4 leading-relaxed">{playlistIntro || '暂无简介'}</p>
                 </div>
                 
