@@ -9,7 +9,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const origins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',')
-    : ['http://localhost:3000', 'http://localhost:5173'];
+    : ['http://localhost:3000', 'http://localhost:5173', 'https://dist-three-henna-12.vercel.app'];
   app.enableCors({ origin: origins, credentials: true });
 
   const port = process.env.PORT || 80;
