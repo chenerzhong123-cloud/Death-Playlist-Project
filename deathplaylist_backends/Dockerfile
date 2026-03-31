@@ -3,9 +3,10 @@ FROM node:20-slim
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
-COPY dist/ ./dist/
+COPY . .
+RUN npm run build
 
 ENV NODE_ENV=production
 EXPOSE 80
