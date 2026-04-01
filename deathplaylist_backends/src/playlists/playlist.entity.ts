@@ -23,7 +23,7 @@ export class Playlist {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column({ length: 15, default: '' })
+  @Column({ length: 30, default: '' })
   intro: string;
 
   @Column({ nullable: true })

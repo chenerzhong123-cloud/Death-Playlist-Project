@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { PlaylistsService } from './playlists.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -32,7 +33,7 @@ class SongItemDto {
 class CreatePlaylistDto {
   @IsOptional()
   @IsString()
-  @MaxLength(15)
+  @MaxLength(30)
   intro?: string;
 
   @IsOptional()
@@ -48,7 +49,7 @@ class CreatePlaylistDto {
 class UpdatePlaylistDto {
   @IsOptional()
   @IsString()
-  @MaxLength(15)
+  @MaxLength(30)
   intro?: string;
 
   @IsOptional()
@@ -72,6 +73,10 @@ export class PlaylistsController {
     @Request() req: { user: { userId: string } },
     @Body() dto: CreatePlaylistDto,
   ) {
+    const existing = await this.playlistsService.findByUserId(req.user.userId);
+    if (existing.length > 0) {
+      throw new BadRequestException('每人只能创建一份歌单，请使用更新接口');
+    }
     const playlist = await this.playlistsService.create(req.user.userId, dto);
     return this.playlistsService.formatPlaylist(playlist);
   }
