@@ -20,20 +20,20 @@ export class ShareController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const baseUrl = `${protocol}://${host}`;
+    const shareUrl = `${baseUrl}/api/share/${id}`;
+
     try {
       const buffer = await this.shareService.getWxaCode(id);
       res.type('image/png');
       res.set('Cache-Control', 'public, max-age=86400');
       res.send(buffer);
     } catch {
-      // Fallback: proxy QR image from external service (wx.downloadFile can't follow redirects)
+      // Fallback: proxy QR image instead of redirect (wx.downloadFile can't follow redirects)
       try {
-        const host = req.get('host');
-        const protocol = req.protocol;
-        const shareUrl = `${protocol}://${host}/api/share/${id}`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&color=ffffff&bgcolor=0&format=png&data=${encodeURIComponent(shareUrl)}`;
-        const qrRes = await fetch(qrUrl);
-        const buffer = Buffer.from(await qrRes.arrayBuffer());
+        const buffer = await this.shareService.getFallbackQR(shareUrl);
         res.type('image/png');
         res.set('Cache-Control', 'public, max-age=86400');
         res.send(buffer);

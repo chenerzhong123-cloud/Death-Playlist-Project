@@ -26,7 +26,6 @@ export class ShareService {
   async getWxaCode(playlistId: string): Promise<Buffer> {
     const token = await this.getAccessToken();
     const url = `https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token=${token}`;
-
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -37,6 +36,7 @@ export class ShareService {
         auto_color: false,
         line_color: { r: 255, g: 255, b: 255 },
         is_hyaline: true,
+        env_version: 'develop',
       }),
     });
 
@@ -46,8 +46,16 @@ export class ShareService {
       return Buffer.from(arrayBuffer);
     }
 
+    // WeChat API returns JSON on error
     const data = (await res.json()) as any;
     throw new Error(data.errmsg || 'Failed to generate wxacode');
+  }
+
+  /** Proxy fallback QR image from qrserver (returns PNG buffer) */
+  async getFallbackQR(shareUrl: string): Promise<Buffer> {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&color=ffffff&bgcolor=0&format=png&data=${encodeURIComponent(shareUrl)}`;
+    const res = await fetch(qrUrl);
+    return Buffer.from(await res.arrayBuffer());
   }
 
   private async getAccessToken(): Promise<string> {
