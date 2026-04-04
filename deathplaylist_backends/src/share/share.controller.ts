@@ -26,13 +26,20 @@ export class ShareController {
       res.set('Cache-Control', 'public, max-age=86400');
       res.send(buffer);
     } catch {
-      // Fallback: redirect to external QR code service
-      const host = req.get('host');
-      const protocol = req.protocol;
-      const shareUrl = `${protocol}://${host}/api/share/${id}`;
-      res.redirect(
-        `https://api.qrserver.com/v1/create-qr-code/?size=280x280&color=ffffff&bgcolor=0&format=png&data=${encodeURIComponent(shareUrl)}`,
-      );
+      // Fallback: proxy QR image from external service (wx.downloadFile can't follow redirects)
+      try {
+        const host = req.get('host');
+        const protocol = req.protocol;
+        const shareUrl = `${protocol}://${host}/api/share/${id}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&color=ffffff&bgcolor=0&format=png&data=${encodeURIComponent(shareUrl)}`;
+        const qrRes = await fetch(qrUrl);
+        const buffer = Buffer.from(await qrRes.arrayBuffer());
+        res.type('image/png');
+        res.set('Cache-Control', 'public, max-age=86400');
+        res.send(buffer);
+      } catch {
+        res.status(500).send('Failed to generate QR code');
+      }
     }
   }
 }
