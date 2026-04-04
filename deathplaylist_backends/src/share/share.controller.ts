@@ -1,5 +1,5 @@
-import { Controller, Get, Param, Req } from '@nestjs/common';
-import { Request } from 'express';
+import { Controller, Get, Param, Req, Res } from '@nestjs/common';
+import { Request, Response } from 'express';
 import { ShareService } from './share.service';
 
 @Controller('share')
@@ -12,5 +12,27 @@ export class ShareController {
     const host = req.get('host');
     const baseUrl = `${protocol}://${host}`;
     return this.shareService.getShareData(id, baseUrl);
+  }
+
+  @Get(':id/wxacode')
+  async getWxaCode(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.shareService.getWxaCode(id);
+      res.type('image/png');
+      res.set('Cache-Control', 'public, max-age=86400');
+      res.send(buffer);
+    } catch {
+      // Fallback: redirect to external QR code service
+      const host = req.get('host');
+      const protocol = req.protocol;
+      const shareUrl = `${protocol}://${host}/api/share/${id}`;
+      res.redirect(
+        `https://api.qrserver.com/v1/create-qr-code/?size=280x280&color=ffffff&bgcolor=0&format=png&data=${encodeURIComponent(shareUrl)}`,
+      );
+    }
   }
 }
