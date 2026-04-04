@@ -98,3 +98,11 @@ npm run build
 ```
 
 **Important:** 任何变更（前端或后端）都需要重新部署后端到微信云托管——刷新小程序不会自动生效。
+
+## 工作流程
+
+每次修改后端代码后，必须提交并推送到 GitHub：
+```bash
+git add -A && git commit -m "描述" && git push
+```
+不要只本地保存而不推送。
