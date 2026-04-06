@@ -20,7 +20,7 @@ export class AuthService {
   ) {}
 
   /** WeChat login — exchange js code for openid via jscode2session */
-  async wechatLogin(code: string) {
+  async wechatLogin(code: string, nickname?: string) {
     const wxData = await this.jscode2session(code);
     if (!wxData.openid) {
       throw new UnauthorizedException(
@@ -30,7 +30,7 @@ export class AuthService {
 
     const user = await this.usersService.findOrCreateByWechat(
       wxData.openid,
-      '微信用户',
+      nickname || '微信用户',
     );
     const payload = { sub: user.id, nickname: user.nickname };
     return {

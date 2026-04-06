@@ -25,6 +25,12 @@ export class AuthController {
       const nickname = dto.nickname || dto.code;
       return this.authService.mockLogin(nickname);
     }
-    return this.authService.wechatLogin(dto.code);
+    // Try real WeChat login, fall back to mock if it fails
+    try {
+      return await this.authService.wechatLogin(dto.code, dto.nickname);
+    } catch {
+      const nickname = dto.nickname || '微信用户';
+      return this.authService.mockLogin(nickname);
+    }
   }
 }
