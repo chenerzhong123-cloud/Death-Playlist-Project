@@ -3,12 +3,39 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Plus, Users, Heart, Music2, Settings, Search, X, Check, ArrowLeft, Trash2, Share2, Download, MessageCircle, Edit3 } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { Plus, Users, Music2, Search, X, Check, ArrowLeft, Download, MessageCircle, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
+import html2canvas from 'html2canvas';
+
+declare const wx: {
+  miniProgram: {
+    postMessage: (params: { data: Record<string, string> }) => void;
+  };
+};
 
 // API Configuration
-const API_BASE = 'https://express-19oq-240531-4-1417659746.sh.run.tcloudbase.com/api';
+const API_BASE = 'http://47.103.81.95/api';
+
+const INTRO_SUGGESTIONS = [
+  '给你的人生，留最后一句话',
+  '如果这是你最后的BGM',
+  '葬礼上，我要放这首歌',
+  '离开时，请为我播放',
+  '闭上眼之前，听一首',
+  '我的告别，由我配乐',
+  '人生最后一首，我选好了',
+  '当我离去，音乐代替遗言',
+  '走的时候，别放哀乐',
+  '这是我最后的倔强',
+  '如果明天不再来',
+  '人生谢幕，歌单已定',
+  '让音乐替我说再见',
+  '世界最后的旋律，由我定',
+  '我选好了，你们播就好',
+];
+
+const randomIntro = () => INTRO_SUGGESTIONS[Math.floor(Math.random() * INTRO_SUGGESTIONS.length)];
 
 async function apiFetch(path: string, options?: RequestInit) {
   const token = localStorage.getItem('jwt');
@@ -36,46 +63,10 @@ interface AuthUser {
 
 interface FriendPlaylist {
   id: string;
-  name: string;
-  avatar: string;
   intro: string;
+  user: { id: string; name: string; avatar: string };
   songs: Song[];
 }
-
-const MOCK_FRIENDS: FriendPlaylist[] = [
-  {
-    id: 'f1',
-    name: '阿强',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-    intro: '最后一程，想听点燥的，别哭。',
-    songs: [
-      { id: '1', title: 'Bohemian Rhapsody', artist: 'Queen', albumArt: 'https://picsum.photos/seed/queen/100/100' },
-      { id: '2', title: 'Stairway to Heaven', artist: 'Led Zeppelin', albumArt: 'https://picsum.photos/seed/led/100/100' },
-      { id: '8', title: 'Purple Rain', artist: 'Prince', albumArt: 'https://picsum.photos/seed/prince/100/100' },
-    ],
-  },
-  {
-    id: 'f2',
-    name: '小雅',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
-    intro: '安静地离开，像风一样自由。',
-    songs: [
-      { id: '3', title: 'Imagine', artist: 'John Lennon', albumArt: 'https://picsum.photos/seed/lennon/100/100' },
-      { id: '6', title: 'Yesterday', artist: 'The Beatles', albumArt: 'https://picsum.photos/seed/beatles/100/100' },
-    ],
-  },
-  {
-    id: 'f3',
-    name: '老李',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=George',
-    intro: '这辈子值了，下辈子再见。',
-    songs: [
-      { id: '4', title: 'Hotel California', artist: 'Eagles', albumArt: 'https://picsum.photos/seed/eagles/100/100' },
-      { id: '5', title: 'Wish You Were Here', artist: 'Pink Floyd', albumArt: 'https://picsum.photos/seed/floyd/100/100' },
-      { id: '10', title: 'Bridge Over Troubled Water', artist: 'Simon & Garfunkel', albumArt: 'https://picsum.photos/seed/simon/100/100' },
-    ],
-  },
-];
 
 export default function App() {
   const [view, setView] = useState<'landing' | 'selection' | 'preview' | 'share' | 'friends'>('landing');
@@ -86,29 +77,77 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [playlistIntro, setPlaylistIntro] = useState('');
   const [isEditingIntro, setIsEditingIntro] = useState(false);
+  const suggestedIntro = useMemo(() => randomIntro(), []);
 
   // Music Selection State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Song[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [recommendedSongs, setRecommendedSongs] = useState<Song[]>([]);
   const [addedSongs, setAddedSongs] = useState<Song[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+
+  // Playlist persistence
+  const [myPlaylistId, setMyPlaylistId] = useState<string | null>(null);
+
+  // Friends' playlists
+  const [friendsPlaylists, setFriendsPlaylists] = useState<FriendPlaylist[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+
+  // Deferred login — action to run after login completes
+  const pendingAction = useRef<(() => void) | null>(null);
+
+  // Share card capture
+  const shareCardRef = useRef<HTMLDivElement>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [showShareGuide, setShowShareGuide] = useState(false);
+
+  const captureShareCard = async (): Promise<string> => {
+    if (!shareCardRef.current) throw new Error('No card');
+    const canvas = await html2canvas(shareCardRef.current, {
+      useCORS: true,
+      scale: 2,
+      backgroundColor: '#18181b',
+    });
+    return canvas.toDataURL('image/jpeg', 0.7);
+  };
+
+  const requireLogin = (): boolean => {
+    if (user) return true;
+    setShowAuthPopup(true);
+    return false;
+  };
 
   // Player State
   // Auth State
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [authNickname, setAuthNickname] = useState('');
 
+  // Load user's saved playlist
+  const loadMyPlaylist = async () => {
+    try {
+      const playlists = await apiFetch('/playlists/me');
+      if (playlists.length > 0) {
+        const p = playlists[0];
+        setMyPlaylistId(p.id);
+        setPlaylistIntro(p.intro || '');
+        setAddedSongs(p.songs.map((s: { id: string; title: string; artist: string; albumArt: string }) => ({
+          id: s.id, title: s.title, artist: s.artist, albumArt: s.albumArt,
+        })));
+      }
+    } catch { /* no saved playlist */ }
+  };
+
   // Auto-login on mount
   useEffect(() => {
     const doLogin = async () => {
       try {
-        // Check stored JWT first
         const storedJwt = localStorage.getItem('jwt');
         if (storedJwt) {
           try {
             const profile = await apiFetch('/users/me');
             setUser({ id: profile.id, nickname: profile.nickname, avatar: profile.avatar });
+            await loadMyPlaylist();
             setAuthLoading(false);
             return;
           } catch {
@@ -116,9 +155,14 @@ export default function App() {
           }
         }
 
-        // Try wxCode from URL (passed by mini program)
         const params = new URLSearchParams(window.location.search);
         const wxCode = params.get('wxCode');
+        const wxNickname = params.get('wxNickname');
+        const wxAvatar = params.get('wxAvatar');
+
+        // Pre-fill auth fields from WeChat data
+        if (wxNickname) setAuthNickname(wxNickname);
+
         if (wxCode) {
           try {
             const data = await apiFetch('/auth/wechat', {
@@ -127,8 +171,8 @@ export default function App() {
             });
             localStorage.setItem('jwt', data.accessToken);
             setUser(data.user);
-            // Clean URL parameter
             window.history.replaceState({}, '', window.location.pathname);
+            await loadMyPlaylist();
             setAuthLoading(false);
             return;
           } catch {
@@ -136,8 +180,7 @@ export default function App() {
           }
         }
 
-        // No auth available — show popup after brief delay
-        setTimeout(() => setShowAuthPopup(true), 800);
+        // No auto-popup — guest browsing allowed
       } finally {
         setAuthLoading(false);
       }
@@ -156,6 +199,12 @@ export default function App() {
       setUser(data.user);
       setShowAuthPopup(false);
       setToast('登录成功');
+      await loadMyPlaylist();
+      // Execute deferred action (e.g. save playlist)
+      if (pendingAction.current) {
+        pendingAction.current();
+        pendingAction.current = null;
+      }
     } catch {
       setToast('登录失败，请重试');
     }
@@ -191,7 +240,126 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [searchQuery, searchSongs]);
 
-  const filteredSongs = searchLoading ? [] : (searchQuery.trim() ? searchResults : []);
+  // Recommended songs — visit-count rotation + multi-batch caching
+  useEffect(() => {
+    const CACHE_KEY = 'deathplaylist_recs';
+    const VISIT_KEY = 'deathplaylist_visit';
+    const CACHE_VER = 5; // bump to invalidate old caches
+    const TARGET = 20;
+    const CACHE_TTL = 24 * 60 * 60 * 1000;
+
+    const KEYWORD_GROUPS = [
+      ['rock classic', 'pop hit', 'jazz vocal'],
+      ['love song', 'indie folk', 'soul r&b'],
+      ['electronic chill', 'country road', 'blues guitar'],
+      ['hip hop', 'latin dance', 'piano ballad'],
+      ['kpop', 'reggae', 'classical piano'],
+      ['metal', 'disco funk', 'acoustic cover'],
+    ];
+    const EXTRA_KEYWORDS = [
+      'soundtrack', 'bossa nova', 'grunge', 'afrobeat',
+      'celtic', 'synthpop', 'ska', 'trip hop',
+    ];
+
+    // Shuffle with randomization, guaranteeing no adjacent same-artist
+    const shuffleStrict = (songs: Song[]): Song[] => {
+      // First randomize the pool so findIndex picks a random valid candidate
+      const pool = [...songs].sort(() => Math.random() - 0.5);
+      const result: Song[] = [];
+      while (pool.length > 0) {
+        const prev = result[result.length - 1];
+        const candidates = pool.map((s, i) => ({ s, i })).filter(({ s }) => !prev || s.artist !== prev.artist);
+        if (candidates.length === 0) break;
+        const pick = candidates[Math.floor(Math.random() * candidates.length)];
+        result.push(pick.s);
+        pool.splice(pick.i, 1);
+      }
+      return result;
+    };
+
+    // Multi-attempt shuffle to handle unlucky randomization
+    const ensureNoAdjacent = (songs: Song[]): Song[] => {
+      const hasViolation = (arr: Song[]) => arr.some((s, i) => i > 0 && s.artist === arr[i - 1].artist);
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const shuffled = shuffleStrict(songs);
+        if (!hasViolation(shuffled)) return shuffled;
+      }
+      return shuffleStrict(songs);
+    };
+
+    // Fetch a batch that satisfies the no-adjacent-same-artist rule
+    const fetchBatch = async (keywords: string[]): Promise<Song[]> => {
+      // Phase 1: fetch from the 3 primary keywords
+      const fetched = await Promise.all(
+        keywords.map(kw => apiFetch(`/songs/search?q=${encodeURIComponent(kw)}&limit=10`).catch(() => []))
+      );
+      let pool = fetched.flat();
+      let result = shuffleStrict(pool);
+
+      // Phase 2: if not enough, pull from extra keywords one by one
+      let extraIdx = 0;
+      while (result.length < TARGET && extraIdx < EXTRA_KEYWORDS.length) {
+        const extra = await apiFetch(
+          `/songs/search?q=${encodeURIComponent(EXTRA_KEYWORDS[extraIdx])}&limit=10`
+        ).catch(() => [] as Song[]);
+        pool = [...pool, ...extra];
+        result = shuffleStrict(pool);
+        extraIdx++;
+      }
+
+      return result.slice(0, TARGET);
+    };
+
+    const loadRecommendations = async () => {
+      try {
+        let visit = parseInt(localStorage.getItem(VISIT_KEY) || '0', 10);
+        visit++;
+        localStorage.setItem(VISIT_KEY, String(visit));
+
+        const raw = localStorage.getItem(CACHE_KEY);
+        let cached: { batches: Song[][]; ts: number; ver?: number } | null = null;
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed.batches) && parsed.ver === CACHE_VER) cached = parsed;
+            else localStorage.removeItem(CACHE_KEY);
+          } catch { localStorage.removeItem(CACHE_KEY); }
+        }
+        const expired = !cached || Date.now() - cached.ts > CACHE_TTL;
+        const batchIndex = (visit - 1) % KEYWORD_GROUPS.length;
+
+        if (!expired && cached!.batches[batchIndex]?.length >= TARGET) {
+          setRecommendedSongs(ensureNoAdjacent(cached!.batches[batchIndex]));
+          return;
+        }
+
+        const batchesToFetch = expired
+          ? KEYWORD_GROUPS.map((_, i) => i)
+          : [batchIndex];
+
+        const results = await Promise.all(
+          batchesToFetch.map(i => fetchBatch(KEYWORD_GROUPS[i]))
+        );
+
+        if (!cached || expired) {
+          cached = { batches: KEYWORD_GROUPS.map(() => []), ts: Date.now(), ver: CACHE_VER };
+        }
+        batchesToFetch.forEach((idx, i) => {
+          cached!.batches[idx] = results[i];
+        });
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cached));
+        const batch = cached.batches[batchIndex].length > 0
+          ? cached.batches[batchIndex]
+          : results[0];
+        setRecommendedSongs(ensureNoAdjacent(batch));
+      } catch {
+        // Silently fail — recommendations are optional
+      }
+    };
+    loadRecommendations();
+  }, []);
+
+  const filteredSongs = searchLoading ? [] : (searchQuery.trim() ? searchResults : recommendedSongs);
 
   const toggleSong = (song: Song) => {
     setAddedSongs(prev => {
@@ -254,7 +422,7 @@ export default function App() {
                 onChange={(e) => setAuthNickname(e.target.value)}
                 placeholder="输入昵称"
                 maxLength={15}
-                className="w-full bg-white/10 border border-white/20 rounded-xl py-3 px-4 text-center text-sm outline-none focus:border-white/40"
+                className="w-full bg-white/10 border border-white/20 rounded-xl py-3 px-4 text-center text-sm outline-none focus:border-white/40 placeholder:text-white/30"
                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
               />
               <div className="flex flex-col gap-3 pt-2">
@@ -342,20 +510,27 @@ export default function App() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setView('friends')}
+                  onClick={async () => {
+                    setView('friends');
+                    if (user) {
+                      setFriendsLoading(true);
+                      try {
+                        const data = await apiFetch('/playlists/friends');
+                        setFriendsPlaylists(data);
+                      } catch {
+                        setFriendsPlaylists([]);
+                      } finally {
+                        setFriendsLoading(false);
+                      }
+                    } else {
+                      setFriendsPlaylists([]);
+                      setFriendsLoading(false);
+                    }
+                  }}
                   className="flex items-center justify-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 text-white py-4 px-8 rounded-2xl font-semibold text-lg transition-colors hover:bg-white/20"
                 >
                   <Users className="w-5 h-5" />
                   看朋友们的歌单
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center justify-center gap-3 bg-transparent border border-white/30 text-white/80 py-4 px-8 rounded-2xl font-medium text-lg transition-colors hover:bg-white/10"
-                >
-                  <Heart className="w-5 h-5" />
-                  点赞投币
                 </motion.button>
               </div>
             </motion.div>
@@ -383,13 +558,17 @@ export default function App() {
                 </button>
                 <h2 className="text-lg font-bold tracking-tight">定制你的歌单</h2>
               </div>
-              <button 
+              <button
                 onClick={() => {
-                  if (addedSongs.length > 0) {
-                    setView('preview');
-                  } else {
+                  if (addedSongs.length === 0) {
                     setToast('请先添加至少一首歌曲');
+                    return;
                   }
+                  if (!requireLogin()) {
+                    pendingAction.current = () => setView('preview');
+                    return;
+                  }
+                  setView('preview');
                 }}
                 className="bg-white text-black px-4 py-1.5 rounded-full text-sm font-bold hover:bg-white/90 transition-colors"
               >
@@ -531,7 +710,7 @@ export default function App() {
                     <input 
                       autoFocus
                       type="text"
-                      maxLength={15}
+                      maxLength={30}
                       value={playlistIntro}
                       onChange={(e) => setPlaylistIntro(e.target.value)}
                       onBlur={() => setIsEditingIntro(false)}
@@ -543,7 +722,7 @@ export default function App() {
                       onClick={() => setIsEditingIntro(true)}
                       className="flex items-center justify-center gap-2 w-full py-2 text-white/50 hover:text-white/80 transition-colors"
                     >
-                      <span className="italic">{playlistIntro || '点击输入简介，15字以内'}</span>
+                      <span className="italic">{playlistIntro || suggestedIntro}</span>
                       <Edit3 className="w-3 h-3" />
                     </button>
                   )}
@@ -566,9 +745,15 @@ export default function App() {
                     <Reorder.Item
                       key={song.id}
                       value={song}
-                      className="flex items-center gap-4 py-2 px-4 rounded-xl hover:bg-white/5 transition-colors cursor-grab active:cursor-grabbing"
+                      className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-white/5 transition-colors cursor-grab active:cursor-grabbing"
                     >
-                      <div className="text-sm font-mono text-white/20 w-6">{String(idx + 1).padStart(2, '0')}</div>
+                      <div className="text-sm font-mono text-white/20 w-5">{String(idx + 1).padStart(2, '0')}</div>
+                      <img
+                        src={song.albumArt}
+                        alt={song.title}
+                        className="w-10 h-10 rounded-lg object-cover bg-zinc-800 shrink-0"
+                        referrerPolicy="no-referrer"
+                      />
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold truncate text-sm">{song.title}</h3>
                         <p className="text-[11px] text-white/40 truncate">{song.artist}</p>
@@ -587,8 +772,37 @@ export default function App() {
               >
                 上一步
               </button>
-              <button 
-                onClick={() => setView('share')}
+              <button
+                onClick={async () => {
+                  const doSave = async () => {
+                    try {
+                      const songsPayload = addedSongs.map(s => ({
+                        externalId: s.id, title: s.title, artist: s.artist, albumArt: s.albumArt,
+                      }));
+                      if (myPlaylistId) {
+                        const updated = await apiFetch(`/playlists/${myPlaylistId}`, {
+                          method: 'PUT',
+                          body: JSON.stringify({ intro: playlistIntro, songs: songsPayload }),
+                        });
+                        setMyPlaylistId(updated.id);
+                      } else {
+                        const created = await apiFetch('/playlists', {
+                          method: 'POST',
+                          body: JSON.stringify({ intro: playlistIntro, songs: songsPayload }),
+                        });
+                        setMyPlaylistId(created.id);
+                      }
+                      setView('share');
+                    } catch {
+                      setToast('保存失败，请重试');
+                    }
+                  };
+                  if (!requireLogin()) {
+                    pendingAction.current = doSave;
+                    return;
+                  }
+                  await doSave();
+                }}
                 className="flex-1 bg-white text-black py-4 rounded-2xl font-bold transition-colors hover:bg-white/90"
               >
                 分享预览
@@ -606,9 +820,8 @@ export default function App() {
             className="relative z-10 flex flex-col items-center h-screen max-w-2xl mx-auto bg-black/90 backdrop-blur-3xl overflow-y-auto pt-12 pb-24 px-6"
           >
             {/* Share Card */}
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+            <div
+              ref={shareCardRef}
               className="w-full max-w-[340px] bg-zinc-900 border-[12px] border-white/10 rounded-[40px] overflow-hidden shadow-2xl relative flex flex-col shrink-0"
             >
               <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover' }} />
@@ -617,13 +830,19 @@ export default function App() {
               <div className="relative p-8 flex flex-col space-y-6">
                 <div className="text-center space-y-3">
                   <h2 className="text-2xl font-bold italic serif">{user?.nickname || '用户'}的死亡歌单</h2>
-                  <p className="text-xs text-white/70 italic px-4 leading-relaxed">{playlistIntro || '暂无简介'}</p>
+                  <p className="text-xs text-white/70 italic px-4 leading-relaxed">{playlistIntro || suggestedIntro}</p>
                 </div>
                 
                 <div className="space-y-1">
                   {addedSongs.map((song, idx) => (
-                    <div key={`share-full-${song.id}`} className="flex items-center gap-3 py-1.5 border-b border-white/5 last:border-0">
-                      <div className="text-[10px] font-mono text-white/20 w-5">{String(idx + 1).padStart(2, '0')}</div>
+                    <div key={`share-full-${song.id}`} className="flex items-center gap-2 py-1.5 border-b border-white/5 last:border-0">
+                      <div className="text-[10px] font-mono text-white/20 w-4 shrink-0">{String(idx + 1).padStart(2, '0')}</div>
+                      <img
+                        src={song.albumArt}
+                        alt={song.title}
+                        className="w-8 h-8 rounded-md object-cover bg-zinc-800 shrink-0"
+                        referrerPolicy="no-referrer"
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium truncate">{song.title}</div>
                         <div className="text-[10px] text-white/40 truncate">{song.artist}</div>
@@ -640,27 +859,42 @@ export default function App() {
                   <div className="text-[8px] text-white/20 italic">扫码查看完整歌单</div>
                 </div>
                 <div className="w-16 h-16 bg-white p-1 rounded-xl shadow-lg shrink-0">
-                  <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`} 
-                    alt="QR Code" 
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`weixin://dl/business/?appid=wxd9305525bdda7423`)}`}
+                    alt="QR Code"
                     className="w-full h-full"
                   />
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Share Actions */}
             <div className="mt-8 w-full max-w-[340px] space-y-4 shrink-0">
               <div className="flex gap-4">
-                <button 
-                  onClick={() => setToast('已保存到相册')}
+                <button
+                  onClick={async () => {
+                    try {
+                      const url = await captureShareCard();
+                      setImagePreviewUrl(url);
+                    } catch {
+                      setToast('生成图片失败');
+                    }
+                  }}
                   className="flex-1 flex flex-col items-center gap-2 p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors"
                 >
                   <Download className="w-5 h-5" />
                   <span className="text-[10px]">保存</span>
                 </button>
-                <button 
-                  onClick={() => setToast('正在打开微信...')}
+                <button
+                  onClick={async () => {
+                    try {
+                      const url = await captureShareCard();
+                      try { wx.miniProgram.postMessage({ data: { action: 'shareImage', image: url } }); } catch {}
+                      setShowShareGuide(true);
+                    } catch {
+                      setToast('生成图片失败');
+                    }
+                  }}
                   className="flex-1 flex flex-col items-center gap-2 p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors"
                 >
                   <MessageCircle className="w-5 h-5" />
@@ -696,35 +930,158 @@ export default function App() {
             </header>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-8">
-              {MOCK_FRIENDS.map((friend) => (
-                <motion.div 
-                  key={friend.id}
-                  className="bg-white/5 border border-white/10 rounded-[32px] p-6 space-y-6"
-                >
-                  <div className="flex items-center gap-4">
-                    <img src={friend.avatar} alt={friend.name} className="w-12 h-12 rounded-full bg-white/10" />
-                    <div>
-                      <h3 className="font-bold text-lg">{friend.name}的死亡歌单</h3>
-                      <p className="text-sm text-white/50 italic">“{friend.intro}”</p>
+              {friendsLoading ? (
+                <div className="py-12 text-center text-white/30 text-sm">加载中...</div>
+              ) : !user ? (
+                /* Guest: show 1 demo card + login CTA */
+                <>
+                  <div className="bg-white/5 border border-white/10 rounded-[32px] p-6 space-y-6">
+                    <div className="flex items-center gap-4">
+                      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Demo" alt="示例用户" className="w-12 h-12 rounded-full bg-white/10" />
+                      <div>
+                        <h3 className="font-bold text-lg">示例用户的死亡歌单</h3>
+                        <p className="text-sm text-white/50 italic">"最后一程，听点自己喜欢的。"</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {[
+                        { title: 'Bohemian Rhapsody', artist: 'Queen', albumArt: 'https://picsum.photos/seed/queen/100/100' },
+                        { title: 'Imagine', artist: 'John Lennon', albumArt: 'https://picsum.photos/seed/lennon/100/100' },
+                        { title: 'Hotel California', artist: 'Eagles', albumArt: 'https://picsum.photos/seed/eagles/100/100' },
+                      ].map((song, i) => (
+                        <div key={i} className="flex items-center gap-3 bg-black/40 p-3 rounded-2xl">
+                          <img src={song.albumArt} className="w-10 h-10 rounded-lg object-cover" referrerPolicy="no-referrer" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold truncate">{song.title}</div>
+                            <div className="text-[10px] text-white/40 truncate">{song.artist}</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    {friend.songs.map((song) => (
-                      <div key={`${friend.id}-${song.id}`} className="flex items-center gap-3 bg-black/40 p-3 rounded-2xl">
-                        <img src={song.albumArt} className="w-10 h-10 rounded-lg object-cover" referrerPolicy="no-referrer" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold truncate">{song.title}</div>
-                          <div className="text-[10px] text-white/40 truncate">{song.artist}</div>
+                  <div className="text-center pt-4 space-y-3">
+                    <p className="text-white/30 text-xs">登录后查看更多朋友的歌单</p>
+                    <button
+                      onClick={() => {
+                        pendingAction.current = async () => {
+                          setFriendsLoading(true);
+                          try {
+                            const data = await apiFetch('/playlists/friends');
+                            setFriendsPlaylists(data);
+                          } catch {
+                            setFriendsPlaylists([]);
+                          } finally {
+                            setFriendsLoading(false);
+                          }
+                        };
+                        setShowAuthPopup(true);
+                      }}
+                      className="bg-white text-black px-8 py-3 rounded-2xl font-bold active:scale-95 transition-transform"
+                    >
+                      登录查看更多
+                    </button>
+                  </div>
+                </>
+              ) : (() => {
+                  const myCard: FriendPlaylist | null = user && myPlaylistId && addedSongs.length > 0
+                    ? { id: myPlaylistId, intro: playlistIntro, user: { id: user.id, name: user.nickname, avatar: user.avatar }, songs: addedSongs }
+                    : null;
+                  const allPlaylists = myCard ? [myCard, ...friendsPlaylists] : friendsPlaylists;
+                  if (allPlaylists.length === 0) {
+                    return (
+                      <div className="py-12 text-center text-white/20 text-xs">
+                        还没有朋友的歌单
+                        <br />
+                        <span className="text-white/10">分享你的歌单给朋友，让他们也创建一份吧</span>
+                      </div>
+                    );
+                  }
+                  return allPlaylists.map((fp) => (
+                    <motion.div
+                      key={fp.id}
+                      className="bg-white/5 border border-white/10 rounded-[32px] p-6 space-y-6"
+                    >
+                      <div className="flex items-center gap-4">
+                        <img src={fp.user.avatar} alt={fp.user.name} className="w-12 h-12 rounded-full bg-white/10" />
+                        <div>
+                          <h3 className="font-bold text-lg">
+                            {fp.user.name}的死亡歌单
+                            {myCard && fp.id === myCard.id && <span className="ml-2 text-xs text-white/30 font-normal">(我)</span>}
+                          </h3>
+                          <p className="text-sm text-white/50 italic">"{fp.intro || '暂无简介'}"</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </motion.div>
-              ))}
-              <div className="py-12 text-center text-white/20 text-xs">没有更多朋友的歌单了</div>
+
+                      <div className="space-y-2">
+                        {fp.songs.map((song) => (
+                          <div key={`${fp.id}-${song.id}`} className="flex items-center gap-3 bg-black/40 p-3 rounded-2xl">
+                            <img src={song.albumArt} className="w-10 h-10 rounded-lg object-cover" referrerPolicy="no-referrer" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold truncate">{song.title}</div>
+                              <div className="text-[10px] text-white/40 truncate">{song.artist}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ));
+                })()
+}
             </div>
           </motion.main>
+        )}
+      </AnimatePresence>
+
+      {/* Image Preview Overlay (save to album) */}
+      <AnimatePresence>
+        {imagePreviewUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/90 flex flex-col items-center justify-center p-6"
+          >
+            <img src={imagePreviewUrl} alt="死亡歌单" className="max-w-full max-h-[70vh] rounded-2xl shadow-2xl" />
+            <p className="mt-4 text-white/50 text-sm">长按图片保存到相册</p>
+            <button
+              onClick={() => setImagePreviewUrl(null)}
+              className="mt-3 text-white/30 text-xs underline underline-offset-4"
+            >
+              关闭
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Share Guide Overlay */}
+      <AnimatePresence>
+        {showShareGuide && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/70 flex flex-col items-center"
+            onClick={() => setShowShareGuide(false)}
+          >
+            <div className="self-end mr-6 mt-4">
+              <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+                <path d="M30 8 L30 38" stroke="white" strokeWidth="2" strokeDasharray="4 4" />
+                <path d="M22 14 L30 6 L38 14" stroke="white" strokeWidth="2" fill="none" />
+                <circle cx="46" cy="10" r="16" fill="white" fillOpacity="0.15" />
+                <text x="46" y="14" textAnchor="middle" fill="white" fontSize="14">...</text>
+              </svg>
+            </div>
+            <div className="mt-2 text-center space-y-2 px-8">
+              <p className="text-white text-lg font-bold">点击右上角 ··· 转发给好友</p>
+              <p className="text-white/40 text-xs">图片已准备好，通过微信转发分享你的歌单</p>
+            </div>
+            <button
+              onClick={() => setShowShareGuide(false)}
+              className="mt-8 text-white/30 text-xs underline underline-offset-4"
+            >
+              关闭
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
