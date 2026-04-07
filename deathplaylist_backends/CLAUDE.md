@@ -68,17 +68,17 @@ See `.env.example`. Key vars:
 - `JWT_SECRET` — JWT signing secret
 - `DB_DATABASE` — SQLite file path (default `death_playlist.db`)
 - `WECHAT_APP_ID` / `WECHAT_APP_SECRET` — WeChat OAuth credentials (placeholder = mock mode)
-- `CORS_ORIGINS` — Comma-separated allowed origins
+- `CORS_ORIGINS` — Comma-separated allowed origins（生产环境包含 `http://47.103.81.95`）
 
 ## Deployment
 
-Deployed on WeChat Cloud Hosting (微信云托管). Container config in `container.config.json`, Dockerfile uses `node:20-slim`.
+Deployed on Alibaba Cloud (阿里云, IP: 47.103.81.95). Dockerfile uses `node:20-slim`, production port 80.
 
 **前端静态文件由后端统一托管：**
 - `main.ts` 中 `app.useStaticAssets(join(__dirname, '..', 'static'))` 托管前端构建产物
 - `static/` 目录包含前端 build 输出（index.html、assets/、privacy.html）
 - `/api` 走后端接口，`/` 走前端页面
-- 小程序 web-view 加载后端云托管 URL（不再使用 Vercel）
+- 小程序直接调用阿里云 API（不再走微信云托管内网）
 
 **完整部署流程：**
 ```bash
@@ -90,14 +90,17 @@ npm run build
 rm -rf ../deathplaylist_backends/static
 cp -r dist ../deathplaylist_backends/static
 
-# 3. 构建后端（Dockerfile 中 COPY . . 会包含 static/）
+# 3. 构建后端
 cd ../deathplaylist_backends
 npm run build
 
-# 4. 部署到微信云托管
+# 4. 部署到阿里云
+# Docker:
+docker build -t deathplaylist .
+docker run -d -p 80:80 -e CORS_ORIGINS=http://47.103.81.95 deathplaylist
 ```
 
-**Important:** 任何变更（前端或后端）都需要重新部署后端到微信云托管——刷新小程序不会自动生效。
+**Important:** 域名备案完成后替换 `47.103.81.95` 为正式域名。
 
 ## 工作流程
 
