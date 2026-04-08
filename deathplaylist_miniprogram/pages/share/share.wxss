@@ -1,0 +1,84 @@
+.page {
+  min-height: 100vh;
+  background: #000;
+}
+
+.share-canvas {
+  position: fixed;
+  left: -9999px;
+  width: 340px;
+  height: 600px;
+}
+
+.content {
+  height: 100vh;
+  padding: 32rpx;
+  padding-top: 24rpx;
+  box-sizing: border-box;
+}
+
+.card-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 40rpx;
+}
+
+.card-wrap {
+  width: 680rpx;
+  border-radius: 48rpx;
+  border: 2rpx solid rgba(255,255,255,0.1);
+  overflow: hidden;
+  box-shadow: 0 16rpx 48rpx rgba(0,0,0,0.5);
+}
+
+.card-image {
+  width: 100%;
+  display: block;
+}
+
+.card-loading {
+  width: 680rpx;
+  height: 800rpx;
+  border-radius: 48rpx;
+  background: rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.3);
+  font-size: 28rpx;
+}
+
+.actions {
+  padding: 0 16rpx;
+}
+
+.action-row {
+  display: flex;
+  gap: 24rpx;
+  margin-bottom: 32rpx;
+}
+
+.action-btn {
+  flex: 1;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.7);
+  border-radius: 32rpx;
+  border: none;
+  padding: 28rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.action-btn::after { border: none; }
+
+.btn-back-link {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-size: 24rpx;
+  padding: 16rpx;
+  line-height: 1;
+}
+
+.btn-back-link::after { border: none; }

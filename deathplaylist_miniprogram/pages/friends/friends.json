@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "朋友们的歌单",
+  "usingComponents": {
+    "auth-popup": "/components/auth-popup/auth-popup"
+  }
+}

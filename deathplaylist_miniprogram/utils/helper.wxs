@@ -1,0 +1,22 @@
+function isAdded(songId, addedSongs) {
+  if (!addedSongs) return false
+  for (var i = 0; i < addedSongs.length; i++) {
+    if (addedSongs[i].id === songId) return true
+  }
+  return false
+}
+
+function pad(n) {
+  n = n.toString()
+  if (n.length < 2) return '0' + n
+  return n
+}
+
+function formatDuration(seconds) {
+  if (!seconds) return ''
+  var m = Math.floor(seconds / 60)
+  var s = seconds % 60
+  return m + "'" + pad(s) + '"'
+}
+
+module.exports = { isAdded: isAdded, pad: pad, formatDuration: formatDuration }

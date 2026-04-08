@@ -1,0 +1,15 @@
+<view class="overlay" wx:if="{{show}}" catchtap="onClose" catchtouchmove="noop">
+  <view class="popup" catchtap="noop" catchtouchmove="noop">
+    <view class="icon-circle">
+      <text class="icon-text">微</text>
+    </view>
+    <text class="title">欢迎使用死亡歌单</text>
+    <text class="subtitle">登录后创建你的专属歌单</text>
+    <button class="btn-login" bindtap="onLogin">微信登录</button>
+    <view class="privacy-hint">
+      <text class="privacy-text">登录即表示同意</text>
+      <text class="privacy-link" bindtap="goPrivacy">《隐私政策》</text>
+    </view>
+    <button class="btn-skip" bindtap="onClose">暂不登录</button>
+  </view>
+</view>
