@@ -3,14 +3,15 @@ import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.setGlobalPrefix('api', {
-    exclude: ['/', '/index.html', '/privacy.html', '/assets/(.*)'],
-  });
-  app.useStaticAssets(join(__dirname, '..', 'static'));
+  // 静态文件必须在 setGlobalPrefix 之前注册，否则 / 会被 API 路由拦截
+  app.use(express.static(join(__dirname, '..', 'static')));
+
+  app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const origins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',')
