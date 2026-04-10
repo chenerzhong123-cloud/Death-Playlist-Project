@@ -1,0 +1,69 @@
+import { motion } from 'motion/react';
+import { Music2, Users } from 'lucide-react';
+
+interface LandingProps {
+  hasPlaylist: boolean;
+  onNewPlaylist: () => void;
+  onFriends: () => void;
+}
+
+export function Landing({ hasPlaylist, onNewPlaylist, onFriends }: LandingProps) {
+  return (
+    <motion.main
+      key="landing"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center max-w-lg mx-auto"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="space-y-8"
+      >
+        <div className="space-y-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="inline-flex items-center justify-center w-24 h-24 mb-4 border border-white/20 rounded-full backdrop-blur-sm bg-white/5"
+          >
+            <Music2 className="w-12 h-12 text-white/80" strokeWidth={1} />
+          </motion.div>
+
+          <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl italic serif">
+            死亡歌单
+          </h1>
+
+          <p className="text-lg text-white/70 font-light leading-relaxed max-w-xs mx-auto">
+            不想自己的葬礼还在吹唢呐放哀乐？
+            <br />
+            选择你的葬礼上播放的音乐吧
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-4 w-full pt-8">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onNewPlaylist}
+            className="flex items-center justify-center gap-3 bg-white text-black py-4 px-8 rounded-2xl font-semibold text-lg transition-colors hover:bg-white/90"
+          >
+            {hasPlaylist ? '我的歌单' : '新的歌单'}
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onFriends}
+            className="flex items-center justify-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 text-white py-4 px-8 rounded-2xl font-semibold text-lg transition-colors hover:bg-white/20"
+          >
+            <Users className="w-5 h-5" />
+            看朋友们的歌单
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.main>
+  );
+}
