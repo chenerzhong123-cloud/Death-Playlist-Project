@@ -19,5 +19,6 @@ jobs:
             cd /root/deathplaylist_backends
             git pull origin main || git pull origin master
             docker build -t deathplaylist .
-            docker stop deathplaylist && docker rm deathplaylist
+            docker stop deathplaylist || true
+            docker rm deathplaylist || true
             docker run -d --name deathplaylist -p 80:80 --restart=always deathplaylist
