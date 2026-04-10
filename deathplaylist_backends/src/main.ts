@@ -1,11 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { join } from 'path';
 import { AppModule } from './app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: ['/', '/index.html', '/privacy.html', '/assets/(.*)'],
+  });
+  app.useStaticAssets(join(__dirname, '..', 'static'));
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const origins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',')
