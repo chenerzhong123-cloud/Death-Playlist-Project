@@ -30,9 +30,9 @@ jobs:
             rm -rf /root/deathplaylist_backends/static
             cp -r dist /root/deathplaylist_backends/static
 
-            # 构建并部署 Docker（no-cache 确保包含最新 static）
+            # 构建并部署 Docker
             cd /root/deathplaylist_backends
-            docker build --no-cache -t deathplaylist .
+            docker build -t deathplaylist .
             docker stop deathplaylist || true
             docker rm deathplaylist || true
             docker run -d --name deathplaylist -p 80:80 --restart=always deathplaylist
