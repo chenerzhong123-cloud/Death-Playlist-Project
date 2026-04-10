@@ -1,0 +1,33 @@
+name: Deploy to Alibaba Cloud
+
+on:
+  push:
+    branches: [main, master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script_stop: true
+          script: |
+            # 拉取前端最新代码并构建
+            cd /root/deathplaylist_frontend
+            git pull origin main || git pull origin master
+            npm install
+            npm run build
+
+            # 复制构建产物到后端 static 目录
+            rm -rf /root/deathplaylist_backends/static
+            cp -r dist /root/deathplaylist_backends/static
+
+            # 重新构建并部署后端 Docker
+            cd /root/deathplaylist_backends
+            docker build -t deathplaylist .
+            docker stop deathplaylist && docker rm deathplaylist
+            docker run -d --name deathplaylist -p 80:80 --restart=always deathplaylist
