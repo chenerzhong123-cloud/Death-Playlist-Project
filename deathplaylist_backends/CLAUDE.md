@@ -109,3 +109,46 @@ docker run -d -p 80:80 -e CORS_ORIGINS=http://47.103.81.95 deathplaylist
 git add -A && git commit -m "描述" && git push
 ```
 不要只本地保存而不推送。
+
+## 部署链路规则
+
+**必须严格遵循 本地 → GitHub → 服务器 的部署链路**，禁止跳过 GitHub 直接向服务器推送文件或代码。
+
+- 所有代码变更必须先 commit & push 到 GitHub
+- 服务器通过 git pull 或 GitHub Actions CI/CD 自动拉取并构建部署
+- 禁止使用 scp 直接传输源代码到服务器绕过 GitHub
+- 如需手动部署，也必须通过 `git pull` 在服务器上拉取最新代码
+
+## Claude Code CI/CD 中枢操作指南
+
+### 检查部署状态
+```bash
+# 查看最近工作流运行
+gh run list -R chenerzhong123-cloud/Death-Playlist-backends --limit 3
+
+# 查看某次运行日志（失败时排查用）
+gh run view <run-id> -R chenerzhong123-cloud/Death-Playlist-backends --log
+```
+
+### 服务器访问（已配置 SSH 别名 `aliyun`）
+```bash
+# 查看容器状态
+ssh aliyun "docker ps -a --filter name=deathplaylist"
+
+# 查看最近日志
+ssh aliyun "docker logs deathplaylist --tail 50"
+
+# 查看磁盘和内存
+ssh aliyun "df -h / && free -h"
+
+# 在服务器上手动拉取并重建
+ssh aliyun "cd /root/deathplaylist_backends && git pull origin main && cd /root/deathplaylist_frontend && git pull origin main && npm install --prefer-offline && npm run build && rm -rf /root/deathplaylist_backends/static && cp -r dist /root/deathplaylist_backends/static && cd /root/deathplaylist_backends && docker build -t deathplaylist . && docker stop deathplaylist; docker rm deathplaylist; docker run -d --name deathplaylist -p 80:80 --restart=always --env-file /root/deathplaylist_backends/.env -v deathplaylist-data:/data deathplaylist"
+```
+
+### 部署失败排查 Playbook
+1. **GitHub Actions 日志**：`gh run view <id> --log` 查看 SSH 连接或构建错误
+2. **服务器容器状态**：`ssh aliyun "docker ps -a"` 确认容器是否在运行
+3. **容器日志**：`ssh aliyun "docker logs deathplaylist --tail 50"` 查看应用错误
+4. **代码同步**：`ssh aliyun "cd /root/deathplaylist_backends && git log --oneline -3"` 确认代码版本
+5. **磁盘空间**：`ssh aliyun "df -h"` 空间不足会导致构建失败
+6. **环境配置**：`ssh aliyun "cat /root/deathplaylist_backends/.env"` 确认生产环境变量
