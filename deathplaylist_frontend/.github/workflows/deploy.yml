@@ -29,5 +29,6 @@ jobs:
             # 重新构建并部署后端 Docker
             cd /root/deathplaylist_backends
             docker build -t deathplaylist .
-            docker stop deathplaylist && docker rm deathplaylist
+            docker stop deathplaylist || true
+            docker rm deathplaylist || true
             docker run -d --name deathplaylist -p 80:80 --restart=always deathplaylist
