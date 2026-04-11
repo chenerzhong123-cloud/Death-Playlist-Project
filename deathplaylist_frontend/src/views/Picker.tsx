@@ -37,11 +37,18 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
     try {
       const data = await apiFetch(`/songs/search?q=${encodeURIComponent(query)}&limit=${PAGE_SIZE}&offset=${offset}`);
       if (append) {
-        setSearchResults(prev => [...prev, ...data]);
+        const existingIds = new Set(searchResults.map(s => s.id));
+        const newSongs = data.filter((s: Song) => !existingIds.has(s.id));
+        if (newSongs.length === 0) {
+          setHasMore(false);
+        } else {
+          setSearchResults(prev => [...prev, ...newSongs]);
+        }
+        setHasMore(newSongs.length > 0 && data.length >= PAGE_SIZE);
       } else {
         setSearchResults(data);
+        setHasMore(data.length >= PAGE_SIZE);
       }
-      setHasMore(data.length >= PAGE_SIZE);
       setCurrentOffset(offset + data.length);
     } catch {
       if (!append) setSearchResults([]);
