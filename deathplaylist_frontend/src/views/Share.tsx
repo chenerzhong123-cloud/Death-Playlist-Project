@@ -27,165 +27,160 @@ const loadImg = (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
-/** Draw the share card using Canvas 2D API */
+/** Draw share card — matches miniprogram share.js style exactly */
 async function drawShareCard(opts: {
   userName: string;
   intro: string;
   songs: Song[];
   qrSrc: string;
 }): Promise<string> {
-  const W = 680;
-  const PAD = 48;
-  const CARD_R = 48;
+  // Dimensions match miniprogram (logical px, scale 2x for retina)
+  const W = 340;
+  const pad = 16;
+  const artSize = 44;
+  const songItemH = 54;
+  const songListH = opts.songs.length * songItemH;
+  const footerH = 60;
+  const titleY = pad + 18;
+  const introY = titleY + 22;
+  const songStartY = introY + 16;
+  const H = songStartY + songListH + 16 + footerH + pad;
 
-  // Measure canvas for text wrapping
-  const measureCanvas = document.createElement('canvas');
-  const measureCtx = measureCanvas.getContext('2d')!;
-
-  const songRowH = 64;
-  const gapBetweenSongs = 12;
-  const songsBlockH = opts.songs.length * songRowH + (opts.songs.length - 1) * gapBetweenSongs;
-
-  const titleY = PAD + 80;
-  const introY = titleY + 50;
-  const songsStartY = introY + 60;
-
-  // Intro text wrapping to compute actual height
-  const introText = opts.intro || '';
-  const maxIntroW = W - PAD * 2 - 40;
-  const introLines = wrapText(measureCtx, introText, maxIntroW, 'italic 20px system-ui, -apple-system, sans-serif');
-  const introBlockH = Math.min(introLines.length, 3) * 28;
-  const actualSongsStartY = Math.max(songsStartY, introY + introBlockH + 20);
-
-  const songsEndY = actualSongsStartY + songsBlockH;
-  const footerY = songsEndY + 40;
-  const H = footerY + 120;
-
+  const scale = 2;
   const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = W * scale;
+  canvas.height = H * scale;
   const ctx = canvas.getContext('2d')!;
+  ctx.scale(scale, scale);
 
-  // Background
-  ctx.fillStyle = '#18181b';
-  ctx.beginPath();
-  ctx.roundRect(0, 0, W, H, CARD_R);
-  ctx.fill();
+  // Background — plain black
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
 
-  // Border
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-  ctx.lineWidth = 12;
-  ctx.beginPath();
-  ctx.roundRect(6, 6, W - 12, H - 12, CARD_R - 4);
-  ctx.stroke();
-
-  // Title: "{userName}的死亡歌单"
+  // Title
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 36px system-ui, -apple-system, sans-serif';
+  ctx.font = 'bold 15px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(`${opts.userName}的死亡歌单`, W / 2, titleY);
+  ctx.fillText(opts.userName + '的死亡歌单', W / 2, titleY);
 
   // Intro
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.font = 'italic 20px system-ui, -apple-system, sans-serif';
-  let curY = introY;
-  for (const line of introLines.slice(0, 3)) {
-    ctx.fillText(line, W / 2, curY);
-    curY += 28;
-  }
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = 'italic 12px sans-serif';
+  const intro = opts.intro || '暂无简介';
+  ctx.fillText(intro.length > 24 ? intro.slice(0, 24) + '...' : intro, W / 2, introY);
+
+  // Load album art images
+  const artX = pad;
+  const images = await Promise.all(opts.songs.map((song) => {
+    return new Promise<HTMLImageElement | null>((resolve) => {
+      if (!song.albumArt) { resolve(null); return; }
+      let settled = false;
+      loadImg(proxyUrl(song.albumArt))
+        .then((img) => { if (!settled) { settled = true; resolve(img); } })
+        .catch(() => { if (!settled) { settled = true; resolve(null); } });
+      setTimeout(() => { if (!settled) { settled = true; resolve(null); } }, 5000);
+    });
+  }));
+
+  // Load QR code image
+  let qrImg: HTMLImageElement | null = null;
+  try {
+    qrImg = await loadImg(opts.qrSrc);
+  } catch {}
 
   // Songs
   ctx.textAlign = 'left';
-  for (let i = 0; i < opts.songs.length; i++) {
-    const song = opts.songs[i];
-    const y = actualSongsStartY + i * (songRowH + gapBetweenSongs);
+  const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e'];
+  const textX = pad + artSize + 12;
+  const maxTextW = W - pad - textX;
 
-    // Index
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.font = '16px monospace';
-    ctx.fillText(String(i + 1).padStart(2, '0'), PAD, y + 30);
+  opts.songs.forEach((song, i) => {
+    const y = songStartY + i * songItemH + songItemH / 2;
+    const artY = y - artSize / 2;
 
-    // Album art
-    try {
-      const artImg = await loadImg(proxyUrl(song.albumArt));
-      ctx.drawImage(artImg, PAD + 40, y + 4, 56, 56);
-    } catch {}
-
-    const textX = PAD + 112;
-    const titleMaxW = W - textX - PAD - 20;
+    // Album art with rounded corners
+    if (images[i]) {
+      ctx.save();
+      roundRect(ctx, artX, artY, artSize, artSize, 7);
+      ctx.clip();
+      ctx.drawImage(images[i], artX, artY, artSize, artSize);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = colors[i % colors.length] + '40';
+      roundRect(ctx, artX, artY, artSize, artSize, 7);
+      ctx.fill();
+    }
 
     // Song title
     ctx.fillStyle = '#ffffff';
-    ctx.font = '22px system-ui, -apple-system, sans-serif';
-    ctx.fillText(truncateText(ctx, song.title, titleMaxW), textX, y + 26);
+    ctx.font = '600 15px sans-serif';
+    ctx.fillText(truncateText(ctx, song.title, maxTextW), textX, y - 4);
 
-    // Song artist
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.font = '18px system-ui, -apple-system, sans-serif';
-    ctx.fillText(truncateText(ctx, song.artist, titleMaxW), textX, y + 50);
+    // Artist
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(truncateText(ctx, song.artist, maxTextW), textX, y + 12);
+  });
 
-    // Separator
-    if (i < opts.songs.length - 1) {
-      ctx.fillStyle = 'rgba(255,255,255,0.05)';
-      ctx.fillRect(PAD, y + songRowH + gapBetweenSongs / 2 - 0.5, W - PAD * 2, 1);
-    }
-  }
+  // Divider
+  const dividerY = songStartY + songListH + 8;
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, dividerY);
+  ctx.lineTo(W - pad, dividerY);
+  ctx.stroke();
 
   // Footer
-  const actualFooterY = actualSongsStartY + opts.songs.length * (songRowH + gapBetweenSongs) + 20;
-  ctx.fillStyle = 'rgba(255,255,255,0.05)';
-  ctx.fillRect(PAD, actualFooterY, W - PAD * 2, 1);
+  const footerY = dividerY + 12;
 
-  const footerTextY = actualFooterY + 36;
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.font = 'bold 16px system-ui, -apple-system, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('死 亡 歌 单', PAD + 16, footerTextY);
+  // QR code on the right
+  const qrSize = 44;
+  const qrX = W - pad - qrSize;
+  const qrY = footerY;
 
-  ctx.fillStyle = 'rgba(255,255,255,0.15)';
-  ctx.font = 'italic 12px system-ui, -apple-system, sans-serif';
-  ctx.fillText('扫码查看完整歌单', PAD + 16, footerTextY + 22);
-
-  // QR code
-  try {
-    const qrImg = await loadImg(opts.qrSrc);
-    const qrSize = 96;
-    const qrX = W - PAD - qrSize - 8;
-    const qrY = actualFooterY + 8;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.roundRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 16);
-    ctx.fill();
+  if (qrImg) {
+    ctx.save();
+    roundRect(ctx, qrX, qrY, qrSize, qrSize, 4);
+    ctx.clip();
     ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
-  } catch {}
+    ctx.restore();
+  }
 
-  return canvas.toDataURL('image/jpeg', 0.85);
+  // Footer text on the left
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('死亡歌单', pad, footerY + 14);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.font = 'italic 8px sans-serif';
+  ctx.fillText('定义自己生命的最后乐章', pad, footerY + 28);
+
+  return canvas.toDataURL('image/jpeg', 0.9);
 }
 
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, font: string): string[] {
-  ctx.font = font;
-  const lines: string[] = [];
-  let current = '';
-  for (const char of text) {
-    const test = current + char;
-    if (ctx.measureText(test).width > maxWidth && current) {
-      lines.push(current);
-      current = char;
-    } else {
-      current = test;
-    }
-  }
-  if (current) lines.push(current);
-  return lines;
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
 }
 
 function truncateText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
   if (ctx.measureText(text).width <= maxWidth) return text;
-  let truncated = text;
-  while (truncated.length > 0 && ctx.measureText(truncated + '...').width > maxWidth) {
-    truncated = truncated.slice(0, -1);
+  let t = text;
+  while (t.length > 0 && ctx.measureText(t + '...').width > maxWidth) {
+    t = t.slice(0, -1);
   }
-  return truncated + '...';
+  return t + '...';
 }
 
 export function Share({ playlistId, userName, playlistIntro, suggestedIntro, addedSongs, isViewing, onGoBack, onToast }: ShareProps) {
@@ -202,7 +197,6 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
         songs: addedSongs,
         qrSrc,
       });
-      // Single download via blob to avoid duplicate triggers
       const res = await fetch(dataUrl);
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
@@ -243,6 +237,10 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
     }
   };
 
+  // Intro text for display (truncate like miniprogram)
+  const displayIntro = (playlistIntro || suggestedIntro || '暂无简介');
+  const truncatedIntro = displayIntro.length > 24 ? displayIntro.slice(0, 24) + '...' : displayIntro;
+
   return (
     <>
       <motion.main
@@ -250,44 +248,48 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="relative z-10 flex flex-col items-center h-screen max-w-2xl mx-auto bg-black/90 backdrop-blur-3xl overflow-y-auto pt-12 pb-24 px-6"
+        className="relative z-10 flex flex-col items-center h-screen max-w-2xl mx-auto bg-black overflow-y-auto pt-6 pb-24 px-4"
       >
-        {/* Share Card — visual only, canvas draws independently */}
+        {/* Share Card — visual preview matching miniprogram style */}
         <div
-          className="w-full max-w-[340px] bg-zinc-900 border-[12px] border-white/10 rounded-[40px] overflow-hidden shadow-2xl relative flex flex-col shrink-0 select-none"
+          className="w-full max-w-[340px] bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10 shrink-0 select-none"
           style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
         >
-          <div className="relative p-8 flex flex-col space-y-6">
-            <div className="text-center space-y-3">
-              <h2 className="text-2xl font-bold italic serif">{userName}的死亡歌单</h2>
-              <p className="text-xs text-white/70 italic px-4 leading-relaxed">{playlistIntro || suggestedIntro}</p>
-            </div>
+          <div className="p-4 pt-4 flex flex-col items-center">
+            {/* Title */}
+            <h2 className="text-[15px] font-bold">{userName}的死亡歌单</h2>
+            {/* Intro */}
+            <p className="text-[12px] text-white/50 italic mt-1.5">{truncatedIntro}</p>
+          </div>
 
-            <div className="space-y-1">
-              {addedSongs.map((song, idx) => (
-                <div key={`share-${song.id}`} className="flex items-center gap-2 py-1.5 border-b border-white/5 last:border-0">
-                  <div className="text-[10px] font-mono text-white/20 w-4 shrink-0">{String(idx + 1).padStart(2, '0')}</div>
+          {/* Songs */}
+          <div className="px-4 space-y-0">
+            {addedSongs.map((song, idx) => {
+              const y = 27 + idx * 54;
+              return (
+                <div key={`share-${song.id}`} className="flex items-center" style={{ height: 54 }}>
                   <img
                     src={song.albumArt}
                     alt={song.title}
-                    className="w-8 h-8 rounded-md object-cover bg-zinc-800 shrink-0"
+                    className="w-[44px] h-[44px] rounded-lg object-cover shrink-0"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium truncate">{song.title}</div>
-                    <div className="text-[10px] text-white/40 truncate">{song.artist}</div>
+                  <div className="flex-1 min-w-0 ml-3">
+                    <div className="text-[15px] font-semibold truncate">{song.title}</div>
+                    <div className="text-[12px] text-white/40 truncate">{song.artist}</div>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
-          <div className="relative bg-white/5 p-6 border-t border-white/10 flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">死亡歌单</div>
-              <div className="text-[8px] text-white/20 italic">扫码查看完整歌单</div>
+          {/* Footer */}
+          <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between">
+            <div className="space-y-1.5">
+              <div className="text-[10px] font-bold text-white/40">死亡歌单</div>
+              <div className="text-[8px] text-white/20 italic">定义自己生命的最后乐章</div>
             </div>
-            <div className="w-16 h-16 bg-white p-1 rounded-xl shadow-lg shrink-0">
+            <div className="w-11 h-11 rounded overflow-hidden shrink-0">
               <img src={qrSrc} alt="QR Code" className="w-full h-full" />
             </div>
           </div>
@@ -332,7 +334,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
             <img
               src={imagePreviewUrl}
               alt="死亡歌单"
-              className="max-w-full max-h-[70vh] rounded-2xl shadow-2xl"
+              className="max-w-full max-h-[70vh] rounded-3xl shadow-2xl"
               style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'default' }}
             />
             <p className="mt-4 text-white/50 text-sm">长按图片保存到相册</p>
