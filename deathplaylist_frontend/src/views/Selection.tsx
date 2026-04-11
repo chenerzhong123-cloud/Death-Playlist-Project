@@ -73,7 +73,7 @@ export function Selection({ addedSongs, onGoBack, onAddSong, onRemoveSong, onCom
         {addedSongs.length < 9 && (
           <button
             onClick={onAddSong}
-            className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-white/30 hover:border-white/60 transition-colors text-white/30 hover:text-white/60"
+            className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-white/30 hover:border-white/60 transition-colors text-white/60 hover:text-white"
           >
             <Plus className="w-5 h-5" />
             <span className="text-sm">添加歌曲</span>
