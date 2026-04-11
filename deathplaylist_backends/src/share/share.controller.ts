@@ -43,8 +43,10 @@ export class UtilsController {
       const decodedUrl = decodeURIComponent(url);
       const imageRes = await fetch(decodedUrl, {
         headers: {
-          'User-Agent': 'DeathPlaylist/1.0',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'image/*,*/*;q=0.8',
         },
+        redirect: 'follow',
       });
       if (!imageRes.ok) {
         res.status(imageRes.status).send('Failed to fetch image');
