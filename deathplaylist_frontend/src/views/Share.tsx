@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Download, Link2 } from 'lucide-react';
 import { API_BASE } from '../lib/api';
 import type { Song } from '../lib/api';
+import { analytics } from '../lib/analytics';
 
 interface ShareProps {
   playlistId: string;
@@ -206,6 +207,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
       link.click();
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      analytics.playlistShared('save_image');
       setImagePreviewUrl(dataUrl);
     } catch (e) {
       console.error('Save image failed:', e);
@@ -217,6 +219,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
     if (navigator.clipboard && window.isSecureContext) {
       try {
         await navigator.clipboard.writeText(shareUrl);
+        analytics.playlistShared('copy_link');
         onToast('链接已复制');
         return;
       } catch {}
@@ -230,6 +233,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
+      analytics.playlistShared('copy_link');
       onToast('链接已复制');
     } catch {
       onToast('复制失败');

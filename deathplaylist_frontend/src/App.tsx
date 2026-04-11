@@ -15,6 +15,7 @@ import { Share } from './views/Share';
 import { Friends } from './views/Friends';
 import { apiFetch } from './lib/api';
 import type { Song } from './lib/api';
+import { analytics } from './lib/analytics';
 
 const INTRO_SUGGESTIONS = [
   '给你的人生，留最后一句话',
@@ -87,6 +88,7 @@ export default function App() {
           setPlaylistIntro(playlist.intro || '');
           setViewingPlaylistId(playlistId);
           setViewingUserName(playlist.user?.name || '用户');
+          analytics.playlistViewed();
           setView('share');
         } catch {
           setToast('歌单不存在');
@@ -141,6 +143,7 @@ export default function App() {
   const doShare = async () => {
     try {
       await savePlaylist(playlistIntro || suggestedIntro, addedSongs);
+      analytics.playlistCreated(addedSongs.length);
       setViewingPlaylistId(null);
       setView('share');
     } catch {
@@ -189,7 +192,7 @@ export default function App() {
           <Landing
             hasPlaylist={!!myPlaylistId && addedSongs.length > 0}
             onNewPlaylist={() => setView('selection')}
-            onFriends={() => setView('friends')}
+            onFriends={() => { analytics.friendsViewed(); setView('friends'); }}
           />
         )}
 
