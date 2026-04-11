@@ -35,8 +35,7 @@ jobs:
 
             # 构建并部署 Docker
             docker build -t deathplaylist .
-            docker stop deathplaylist || true
-            docker rm deathplaylist || true
+            docker rm -f deathplaylist || true
             docker run -d \
               --name deathplaylist \
               -p 80:80 \
