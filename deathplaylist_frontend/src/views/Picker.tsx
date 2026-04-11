@@ -110,7 +110,7 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
           {/* Hint when typing */}
           {searchQuery && !searchQuery.includes('*') && (
             <span className="absolute right-10 top-1/2 -translate-y-1/2 text-[9px] text-white/15 pointer-events-none whitespace-nowrap">
-              输入*歌手名可组合搜索
+              输入歌曲名*歌手名可组合搜索
             </span>
           )}
         </div>
