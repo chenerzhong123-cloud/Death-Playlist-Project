@@ -38,6 +38,10 @@ export function usePlaylist() {
       });
       setMyPlaylistId(created.id);
     }
+    // Update local intro state so it reflects in Friends page etc.
+    if (intro && !playlistIntro) {
+      setPlaylistIntro(intro);
+    }
   };
 
   return {
