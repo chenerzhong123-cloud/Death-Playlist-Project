@@ -24,15 +24,14 @@ jobs:
             npm install --prefer-offline
             npm run build
 
-            # 复制前端构建产物到后端 static 目录
-            rm -rf /root/deathplaylist_backends/static
-            cp -r dist /root/deathplaylist_backends/static
-
             # 拉取后端最新代码
             cd /root/deathplaylist_backends
             git checkout -- . 2>/dev/null || true
-            git clean -fd static/ 2>/dev/null || true
             git pull origin main
+
+            # 复制前端构建产物到后端 static 目录（必须在 git pull 之后）
+            rm -rf /root/deathplaylist_backends/static
+            cp -r /root/deathplaylist_frontend/dist /root/deathplaylist_backends/static
 
             # 构建并部署 Docker
             docker build -t deathplaylist .
