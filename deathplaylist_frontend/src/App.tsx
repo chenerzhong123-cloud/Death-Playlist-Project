@@ -282,7 +282,7 @@ export default function App() {
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-bold text-center">输入你的称呼</h3>
-              <p className="text-xs text-white/40 text-center">用于在歌单卡片上显示</p>
+              <p className="text-xs text-white/60 text-center">用于在歌单卡片上显示</p>
 
               <div className="space-y-3">
                 <input
@@ -291,7 +291,7 @@ export default function App() {
                   onChange={(e) => setSurnameInput(e.target.value.replace(/\s/g, ''))}
                   placeholder="请输入你的姓"
                   maxLength={2}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-white/30 text-center text-lg"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-white/30 text-center text-lg"
                   autoFocus
                 />
 
@@ -301,7 +301,7 @@ export default function App() {
                     className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
                       genderInput === '先生'
                         ? 'bg-white text-black'
-                        : 'bg-white/5 text-white/40 hover:bg-white/10'
+                        : 'bg-white/5 text-white/60 hover:bg-white/10'
                     }`}
                   >
                     先生
@@ -311,7 +311,7 @@ export default function App() {
                     className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
                       genderInput === '女士'
                         ? 'bg-white text-black'
-                        : 'bg-white/5 text-white/40 hover:bg-white/10'
+                        : 'bg-white/5 text-white/60 hover:bg-white/10'
                     }`}
                   >
                     女士

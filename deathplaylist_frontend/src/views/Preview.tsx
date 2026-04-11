@@ -26,7 +26,7 @@ export function Preview({ userName, playlistIntro, suggestedIntro, addedSongs, o
           <h1 className="text-3xl font-bold tracking-tight italic serif">
             {userName}的死亡歌单
           </h1>
-          <p className="text-sm text-white/50 italic">
+          <p className="text-sm text-white/60 italic">
             {playlistIntro || suggestedIntro}
           </p>
         </div>
@@ -48,7 +48,7 @@ export function Preview({ userName, playlistIntro, suggestedIntro, addedSongs, o
                 value={song}
                 className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-white/5 transition-colors cursor-grab active:cursor-grabbing"
               >
-                <div className="text-sm font-mono text-white/20 w-5">{String(idx + 1).padStart(2, '0')}</div>
+                <div className="text-sm font-mono text-white/30 w-5">{String(idx + 1).padStart(2, '0')}</div>
                 <img
                   src={song.albumArt}
                   alt={song.title}
@@ -57,7 +57,7 @@ export function Preview({ userName, playlistIntro, suggestedIntro, addedSongs, o
                 />
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate text-sm">{song.title}</h3>
-                  <p className="text-[11px] text-white/40 truncate">{song.artist}</p>
+                  <p className="text-[11px] text-white/60 truncate">{song.artist}</p>
                 </div>
               </Reorder.Item>
             ))}

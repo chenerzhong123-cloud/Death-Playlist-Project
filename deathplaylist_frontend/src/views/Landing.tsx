@@ -63,7 +63,7 @@ export function Landing({ hasPlaylist, onNewPlaylist, onFriends }: LandingProps)
             死亡歌单
           </h1>
 
-          <p className="text-lg text-white/70 font-light leading-relaxed max-w-xs mx-auto">
+          <p className="text-lg text-white/60 font-light leading-relaxed max-w-xs mx-auto">
             哀乐和唢呐太千篇一律？
             <br />
             来定义自己生命的最后乐章

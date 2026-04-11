@@ -29,7 +29,7 @@ function PlaylistCard({ fp, isMine }: { fp: PublicPlaylist; isMine?: boolean }) 
           {fp.user.name}的死亡歌单
           {isMine && <span className="ml-2 text-xs text-white/30 font-normal">(我)</span>}
         </h2>
-        <p className="text-[12px] text-white/50 italic mt-1.5">{truncatedIntro}</p>
+        <p className="text-[12px] text-white/60 italic mt-1.5">{truncatedIntro}</p>
       </div>
 
       <div className="px-4">
@@ -43,7 +43,7 @@ function PlaylistCard({ fp, isMine }: { fp: PublicPlaylist; isMine?: boolean }) 
             />
             <div className="flex-1 min-w-0 ml-3">
               <div className="text-[15px] font-semibold truncate">{song.title}</div>
-              <div className="text-[12px] text-white/40 truncate">{song.artist}</div>
+              <div className="text-[12px] text-white/60 truncate">{song.artist}</div>
             </div>
           </div>
         ))}
@@ -51,8 +51,8 @@ function PlaylistCard({ fp, isMine }: { fp: PublicPlaylist; isMine?: boolean }) 
 
       <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between">
         <div className="space-y-1.5">
-          <div className="text-[10px] font-bold text-white/40">死亡歌单</div>
-          <div className="text-[8px] text-white/20 italic">定义自己生命的最后乐章</div>
+          <div className="text-[10px] font-bold text-white/60">死亡歌单</div>
+          <div className="text-[8px] text-white/30 italic">定义自己生命的最后乐章</div>
         </div>
       </div>
     </div>
@@ -118,7 +118,7 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
             </div>
             <div className="text-center space-y-2">
               <p className="text-white/30 text-sm">还没有人创建歌单</p>
-              <p className="text-white/15 text-xs">成为第一个定义自己生命最后乐章的人</p>
+              <p className="text-white/30 text-xs">成为第一个定义自己生命最后乐章的人</p>
             </div>
           </div>
         ) : (

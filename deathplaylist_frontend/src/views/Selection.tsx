@@ -38,7 +38,7 @@ export function Selection({ addedSongs, onGoBack, onAddSong, onRemoveSong, onCom
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
-        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/20 px-2 mb-3">
+        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60 px-2 mb-3">
           已添加 ({addedSongs.length}/9)
         </div>
 
@@ -58,11 +58,11 @@ export function Selection({ addedSongs, onGoBack, onAddSong, onRemoveSong, onCom
             />
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold truncate text-sm">{song.title}</h3>
-              <p className="text-[11px] text-white/40 truncate">{song.artist}</p>
+              <p className="text-[11px] text-white/60 truncate">{song.artist}</p>
             </div>
             <button
               onClick={() => onRemoveSong(song.id)}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-all"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white/30 hover:text-red-400 hover:bg-red-400/10 transition-all"
             >
               <X className="w-4 h-4" />
             </button>
@@ -73,7 +73,7 @@ export function Selection({ addedSongs, onGoBack, onAddSong, onRemoveSong, onCom
         {addedSongs.length < 9 && (
           <button
             onClick={onAddSong}
-            className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-white/10 hover:border-white/20 transition-colors text-white/30 hover:text-white/50"
+            className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-white/10 hover:border-white/20 transition-colors text-white/60 hover:text-white"
           >
             <Plus className="w-5 h-5" />
             <span className="text-sm">添加歌曲</span>
@@ -81,7 +81,7 @@ export function Selection({ addedSongs, onGoBack, onAddSong, onRemoveSong, onCom
         )}
 
         {addedSongs.length > 0 && (
-          <div className="text-center text-white/10 text-[10px] pt-2">
+          <div className="text-center text-white/30 text-[10px] pt-2">
             最多添加9首歌曲
           </div>
         )}

@@ -26,11 +26,11 @@ export function SongRow({ song, isAdded, variant, onToggle, onRemove }: SongRowP
         />
         <div className="flex-1 min-w-0">
           <h3 className="font-medium truncate text-xs">{song.title}</h3>
-          <p className="text-[10px] text-white/30 truncate">{song.artist}</p>
+          <p className="text-[10px] text-white/60 truncate">{song.artist}</p>
         </div>
         <button
           onClick={onRemove}
-          className="w-7 h-7 rounded-md flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-all"
+          className="w-7 h-7 rounded-md flex items-center justify-center text-white/30 hover:text-red-400 hover:bg-red-400/10 transition-all"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -51,7 +51,7 @@ export function SongRow({ song, isAdded, variant, onToggle, onRemove }: SongRowP
       />
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold truncate text-sm">{song.title}</h3>
-        <p className="text-[11px] text-white/40 truncate">{song.artist}</p>
+        <p className="text-[11px] text-white/60 truncate">{song.artist}</p>
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -59,7 +59,7 @@ export function SongRow({ song, isAdded, variant, onToggle, onRemove }: SongRowP
           className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border ${
             isAdded
               ? 'bg-white border-white text-black'
-              : 'bg-transparent border-white/20 text-white/40 hover:border-white/40 hover:text-white'
+              : 'bg-transparent border-white/20 text-white/60 hover:border-white/40 hover:text-white'
           }`}
         >
           {isAdded ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}

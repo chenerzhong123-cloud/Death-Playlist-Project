@@ -64,7 +64,7 @@ async function drawShareCard(opts: {
   ctx.fillText(opts.userName + '的死亡歌单', W / 2, titleY);
 
   // Intro
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.font = 'italic 12px sans-serif';
   const intro = opts.intro || '暂无简介';
   ctx.fillText(intro.length > 24 ? intro.slice(0, 24) + '...' : intro, W / 2, introY);
@@ -117,7 +117,7 @@ async function drawShareCard(opts: {
     ctx.fillText(truncateText(ctx, song.title, maxTextW), textX, y - 4);
 
     // Artist
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.font = '12px sans-serif';
     ctx.fillText(truncateText(ctx, song.artist, maxTextW), textX, y + 12);
   });
@@ -148,12 +148,11 @@ async function drawShareCard(opts: {
   }
 
   // Footer text on the left
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  ctx.font = 'bold 10px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.textAlign = 'left';
   ctx.fillText('死亡歌单', pad, footerY + 14);
 
-  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.font = 'italic 8px sans-serif';
   ctx.fillText('定义自己生命的最后乐章', pad, footerY + 28);
 
@@ -259,7 +258,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
             {/* Title */}
             <h2 className="text-[15px] font-bold">{userName}的死亡歌单</h2>
             {/* Intro */}
-            <p className="text-[12px] text-white/50 italic mt-1.5">{truncatedIntro}</p>
+            <p className="text-[12px] text-white/60 italic mt-1.5">{truncatedIntro}</p>
           </div>
 
           {/* Songs */}
@@ -276,7 +275,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
                   />
                   <div className="flex-1 min-w-0 ml-3">
                     <div className="text-[15px] font-semibold truncate">{song.title}</div>
-                    <div className="text-[12px] text-white/40 truncate">{song.artist}</div>
+                    <div className="text-[12px] text-white/60 truncate">{song.artist}</div>
                   </div>
                 </div>
               );
@@ -286,8 +285,8 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
           {/* Footer */}
           <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between">
             <div className="space-y-1.5">
-              <div className="text-[10px] font-bold text-white/40">死亡歌单</div>
-              <div className="text-[8px] text-white/20 italic">定义自己生命的最后乐章</div>
+              <div className="text-[10px] font-bold text-white/60">死亡歌单</div>
+              <div className="text-[8px] text-white/30 italic">定义自己生命的最后乐章</div>
             </div>
             <div className="w-11 h-11 rounded overflow-hidden shrink-0">
               <img src={qrSrc} alt="QR Code" className="w-full h-full" />
@@ -315,7 +314,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
           </div>
           <button
             onClick={onGoBack}
-            className="w-full py-2 text-white/40 hover:text-white transition-colors text-xs"
+            className="w-full py-2 text-white/60 hover:text-white transition-colors text-xs"
           >
             {isViewing ? '返回首页' : '返回预览'}
           </button>
@@ -337,7 +336,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
               className="max-w-full max-h-[70vh] rounded-3xl shadow-2xl"
               style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'default' }}
             />
-            <p className="mt-4 text-white/50 text-sm">长按图片保存到相册</p>
+            <p className="mt-4 text-white/60 text-sm">长按图片保存到相册</p>
             <button
               onClick={() => setImagePreviewUrl(null)}
               className="mt-3 text-white/30 text-xs underline underline-offset-4"

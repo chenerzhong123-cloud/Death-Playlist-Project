@@ -116,7 +116,7 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
           )}
           {/* Hint when typing */}
           {searchQuery && !searchQuery.includes('*') && (
-            <span className="absolute right-10 top-1/2 -translate-y-1/2 text-[9px] text-white/15 pointer-events-none whitespace-nowrap">
+            <span className="absolute right-10 top-1/2 -translate-y-1/2 text-[9px] text-white/30 pointer-events-none whitespace-nowrap">
               输入歌曲名*歌手名可组合搜索
             </span>
           )}
@@ -126,7 +126,7 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
       {/* Section Header */}
       {!searchQuery.trim() && (
         <div className="px-4 pb-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">推荐歌曲</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">推荐歌曲</span>
         </div>
       )}
 
@@ -142,7 +142,7 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
         }}
       >
         {displayedSongs.length === 0 ? (
-          <div className="py-10 text-center text-white/20 text-xs">
+          <div className="py-10 text-center text-white/30 text-xs">
             {searchLoading ? '搜索中...' : '未找到相关歌曲'}
           </div>
         ) : (
@@ -173,7 +173,7 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
                   />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate text-sm">{song.title}</h3>
-                    <p className="text-[11px] text-white/40 truncate">{song.artist}</p>
+                    <p className="text-[11px] text-white/60 truncate">{song.artist}</p>
                   </div>
                   <button
                     onClick={(e) => {
@@ -189,7 +189,7 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
                     className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border ${
                       added
                         ? 'bg-white border-white text-black'
-                        : 'bg-transparent border-white/20 text-white/40 hover:border-white/40 hover:text-white'
+                        : 'bg-transparent border-white/20 text-white/60 hover:border-white/40 hover:text-white'
                     }`}
                   >
                     {added ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -199,7 +199,7 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
             })}
             {/* Load more indicator */}
             {searchQuery.trim() && hasMore && (
-              <div className="py-3 text-center text-white/20 text-xs">
+              <div className="py-3 text-center text-white/30 text-xs">
                 {searchLoading ? '加载更多...' : '下拉加载更多'}
               </div>
             )}
