@@ -12,6 +12,53 @@ interface FriendsProps {
   onGoBack: () => void;
 }
 
+function getDisplayName(fallback: string): string {
+  const surname = localStorage.getItem('user_surname');
+  const gender = localStorage.getItem('user_gender');
+  return surname ? `${surname}${gender || '先生'}` : fallback;
+}
+
+function PlaylistCard({ fp, isMine }: { fp: PublicPlaylist; isMine?: boolean }) {
+  const intro = fp.intro || '暂无简介';
+  const truncatedIntro = intro.length > 24 ? intro.slice(0, 24) + '...' : intro;
+
+  return (
+    <div className="bg-black rounded-3xl overflow-hidden shadow-2xl border-2 border-white/15">
+      <div className="p-4 flex flex-col items-center">
+        <h2 className="text-[15px] font-bold">
+          {fp.user.name}的死亡歌单
+          {isMine && <span className="ml-2 text-xs text-white/30 font-normal">(我)</span>}
+        </h2>
+        <p className="text-[12px] text-white/50 italic mt-1.5">{truncatedIntro}</p>
+      </div>
+
+      <div className="px-4">
+        {fp.songs.map((song, idx) => (
+          <div key={`${fp.id}-${song.id}`} className="flex items-center" style={{ height: 54 }}>
+            <img
+              src={song.albumArt}
+              alt={song.title}
+              className="w-[44px] h-[44px] rounded-lg object-cover shrink-0"
+              referrerPolicy="no-referrer"
+            />
+            <div className="flex-1 min-w-0 ml-3">
+              <div className="text-[15px] font-semibold truncate">{song.title}</div>
+              <div className="text-[12px] text-white/40 truncate">{song.artist}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between">
+        <div className="space-y-1.5">
+          <div className="text-[10px] font-bold text-white/40">死亡歌单</div>
+          <div className="text-[8px] text-white/20 italic">定义自己生命的最后乐章</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBack }: FriendsProps) {
   const [publicPlaylists, setPublicPlaylists] = useState<PublicPlaylist[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,11 +82,14 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
     loadPlaylists();
   }
 
+  const displayName = getDisplayName(user?.nickname || '用户');
+
   const myCard: PublicPlaylist | null = user && myPlaylistId && addedSongs.length > 0
-    ? { id: myPlaylistId, intro: playlistIntro, user: { id: user.id, name: user.nickname, avatar: user.avatar }, songs: addedSongs }
+    ? { id: myPlaylistId, intro: playlistIntro, user: { id: user.id, name: displayName, avatar: user.avatar }, songs: addedSongs }
     : null;
 
-  const allPlaylists = myCard ? [myCard, ...publicPlaylists] : publicPlaylists;
+  const hasMine = !!myCard;
+  const hasOthers = publicPlaylists.length > 0;
 
   return (
     <motion.main
@@ -47,9 +97,9 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="relative z-10 flex flex-col h-screen max-w-2xl mx-auto bg-black/40 backdrop-blur-xl border-x border-white/5 overflow-hidden"
+      className="relative z-10 flex flex-col h-screen max-w-2xl mx-auto bg-black overflow-hidden"
     >
-      <header className="p-4 border-b border-white/10 flex items-center gap-3 sticky top-0 z-20 bg-black/40 backdrop-blur-md">
+      <header className="p-4 border-b border-white/10 flex items-center gap-3 sticky top-0 z-20 bg-black">
         <button
           onClick={onGoBack}
           className="p-1 -ml-1 text-white/60 hover:text-white transition-colors"
@@ -59,43 +109,35 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
         <h2 className="text-lg font-bold tracking-tight">朋友们的歌单</h2>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-8">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {loading ? (
           <div className="py-12 text-center text-white/30 text-sm">加载中...</div>
-        ) : allPlaylists.length === 0 ? (
+        ) : !hasMine && !hasOthers ? (
           <div className="py-12 text-center text-white/20 text-xs">
             还没有人创建歌单
             <br />
             <span className="text-white/10">成为第一个创建死亡歌单的人吧</span>
           </div>
-        ) : allPlaylists.map((fp) => (
-            <motion.div
-              key={fp.id}
-              className="bg-white/5 border border-white/10 rounded-[32px] p-6 space-y-6"
-            >
-              <div className="flex items-center gap-4">
-                <img src={fp.user.avatar} alt={fp.user.name} className="w-12 h-12 rounded-full bg-white/10" />
-                <div>
-                  <h3 className="font-bold text-lg">
-                    {fp.user.name}的死亡歌单
-                    {myCard && fp.id === myCard.id && <span className="ml-2 text-xs text-white/30 font-normal">(我)</span>}
-                  </h3>
-                  <p className="text-sm text-white/50 italic">"{fp.intro || '暂无简介'}"</p>
-                </div>
+        ) : (
+          <>
+            {/* My playlist — pinned at top */}
+            {myCard && <PlaylistCard fp={myCard} isMine />}
+
+            {/* Divider between mine and others */}
+            {hasMine && hasOthers && (
+              <div className="flex items-center gap-3 py-2">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-[10px] text-white/20 italic whitespace-nowrap">你也是自己的好朋友</span>
+                <div className="flex-1 h-px bg-white/10" />
               </div>
-              <div className="space-y-2">
-                {fp.songs.map((song) => (
-                  <div key={`${fp.id}-${song.id}`} className="flex items-center gap-3 bg-black/40 p-3 rounded-2xl">
-                    <img src={song.albumArt} className="w-10 h-10 rounded-lg object-cover" referrerPolicy="no-referrer" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold truncate">{song.title}</div>
-                      <div className="text-[10px] text-white/40 truncate">{song.artist}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          ))}
+            )}
+
+            {/* Other playlists */}
+            {publicPlaylists.map((fp) => (
+              <PlaylistCard key={fp.id} fp={fp} />
+            ))}
+          </>
+        )}
       </div>
     </motion.main>
   );

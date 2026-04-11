@@ -252,7 +252,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
       >
         {/* Share Card — visual preview matching miniprogram style */}
         <div
-          className="w-full max-w-[340px] bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10 shrink-0 select-none"
+          className="w-full max-w-[340px] bg-black rounded-3xl overflow-hidden shadow-2xl border-2 border-white/15 shrink-0 select-none"
           style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
         >
           <div className="p-4 pt-4 flex flex-col items-center">
