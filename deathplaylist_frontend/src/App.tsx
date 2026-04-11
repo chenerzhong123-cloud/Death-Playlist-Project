@@ -46,7 +46,7 @@ function getDisplayName(fallback: string): string {
 
 export default function App() {
   const [view, setView] = useState<View>('landing');
-  const [bgImage] = useState('https://images.unsplash.com/photo-1514525253361-bee871871a340b?auto=format&fit=crop&q=80&w=1920');
+  const [bgImage] = useState('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=1920');
   const [toast, setToast] = useState<string | null>(null);
   const suggestedIntro = useMemo(() => randomIntro(), []);
 
