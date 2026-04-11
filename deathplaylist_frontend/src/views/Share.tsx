@@ -20,6 +20,28 @@ interface ShareProps {
 const proxyUrl = (url: string) =>
   `${API_BASE}/utils/image-proxy?url=${encodeURIComponent(url)}`;
 
+/**
+ * html2canvas cannot parse CSS lab()/oklch() color functions used by Tailwind CSS 4.
+ * This callback runs on the cloned DOM before capture. It resolves all computed
+ * color/border-color/background-color values to rgb() strings as inline styles
+ * so html2canvas only ever sees standard CSS color formats.
+ */
+const fixColorsForCapture = (clonedDoc: Document) => {
+  const els = clonedDoc.querySelectorAll('*');
+  els.forEach((el) => {
+    const htmlEl = el as HTMLElement;
+    const cs = clonedDoc.defaultView?.getComputedStyle(htmlEl);
+    if (!cs) return;
+    const props: (keyof CSSStyleDeclaration)[] = ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 'borderBottomColor'];
+    props.forEach((prop) => {
+      const val = cs[prop] as string;
+      if (val && typeof val === 'string' && (val.includes('lab(') || val.includes('oklch(') || val.includes('color('))) {
+        htmlEl.style[prop as any] = val;
+      }
+    });
+  });
+};
+
 export function Share({ playlistId, userName, playlistIntro, suggestedIntro, addedSongs, bgImage, isViewing, onGoBack, onToast }: ShareProps) {
   const shareCardRef = useRef<HTMLDivElement>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -31,7 +53,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
     const card = shareCardRef.current;
     if (!card) throw new Error('No card');
 
-    // Replace all cross-origin images with proxy URLs before capture
+    // Replace cross-origin images with proxy URLs
     const imgs = card.querySelectorAll('img') as NodeListOf<HTMLImageElement>;
     const originals: string[] = [];
     imgs.forEach((img, i) => {
@@ -42,19 +64,17 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
       }
     });
 
-    // Replace background image
-    const bgDiv = card.querySelector('[data-bg]') as HTMLElement;
-    const originalBg = bgDiv?.style.backgroundImage || '';
-
     try {
       const canvas = await html2canvas(card, {
         useCORS: true,
         scale: 2,
         backgroundColor: '#18181b',
+        onclone: (_doc, clonedEl) => {
+          fixColorsForCapture(clonedEl.ownerDocument);
+        },
       });
       return canvas.toDataURL('image/jpeg', 0.7);
     } finally {
-      // Restore original image sources
       imgs.forEach((img, i) => {
         img.src = originals[i];
       });
@@ -64,14 +84,12 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
   const saveImage = async () => {
     try {
       const dataUrl = await captureShareCard();
-      // Download via <a> tag
       const link = document.createElement('a');
       link.download = `死亡歌单.jpg`;
       link.href = dataUrl;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      // Show preview for mobile long-press save
       setImagePreviewUrl(dataUrl);
     } catch (e) {
       console.error('Save image failed:', e);
