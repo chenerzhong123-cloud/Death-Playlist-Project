@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Req, Res } from '@nestjs/common';
+import { Controller, Get, Param, Query, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ShareService } from './share.service';
 
@@ -31,6 +31,33 @@ export class ShareController {
       res.send(buffer);
     } catch {
       res.status(500).send('Failed to generate QR code');
+    }
+  }
+}
+
+@Controller('utils')
+export class UtilsController {
+  @Get('image-proxy')
+  async proxyImage(@Query('url') url: string, @Res() res: Response) {
+    try {
+      const decodedUrl = decodeURIComponent(url);
+      const imageRes = await fetch(decodedUrl, {
+        headers: {
+          'User-Agent': 'DeathPlaylist/1.0',
+        },
+      });
+      if (!imageRes.ok) {
+        res.status(imageRes.status).send('Failed to fetch image');
+        return;
+      }
+      const contentType = imageRes.headers.get('content-type') || 'image/png';
+      const buffer = Buffer.from(await imageRes.arrayBuffer());
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Cache-Control', 'public, max-age=604800');
+      res.type(contentType);
+      res.send(buffer);
+    } catch {
+      res.status(500).send('Failed to proxy image');
     }
   }
 }
