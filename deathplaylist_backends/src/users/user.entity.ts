@@ -7,7 +7,6 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Playlist } from '../playlists/playlist.entity';
-import { Friendship } from '../friends/friendship.entity';
 
 @Entity('users')
 export class User {
@@ -16,6 +15,9 @@ export class User {
 
   @Column({ unique: true, nullable: true })
   wechatOpenId: string;
+
+  @Column({ unique: true, nullable: true })
+  deviceId: string;
 
   @Column({ length: 50 })
   nickname: string;
@@ -28,9 +30,6 @@ export class User {
 
   @OneToMany(() => Playlist, (playlist) => playlist.user)
   playlists: Playlist[];
-
-  @OneToMany(() => Friendship, (f) => f.user)
-  friendships: Friendship[];
 
   @CreateDateColumn()
   createdAt: Date;

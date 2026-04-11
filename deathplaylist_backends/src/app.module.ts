@@ -4,7 +4,6 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { SongsModule } from './songs/songs.module';
 import { PlaylistsModule } from './playlists/playlists.module';
-import { FriendsModule } from './friends/friends.module';
 import { ShareModule } from './share/share.module';
 import { SeedModule } from './seed/seed.module';
 import * as express from 'express';
@@ -23,7 +22,6 @@ import { existsSync } from 'fs';
     UsersModule,
     SongsModule,
     PlaylistsModule,
-    FriendsModule,
     ShareModule,
     SeedModule,
   ],

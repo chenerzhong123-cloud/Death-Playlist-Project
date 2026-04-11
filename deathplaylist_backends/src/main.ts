@@ -15,7 +15,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const origins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',')
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://47.103.81.95', 'https://servicewechat.com'];
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://47.103.81.95'];
   app.enableCors({ origin: origins, credentials: true });
 
   const port = process.env.PORT || 80;

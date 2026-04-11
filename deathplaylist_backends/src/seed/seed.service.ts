@@ -5,7 +5,6 @@ import { Song } from '../songs/song.entity';
 import { User } from '../users/user.entity';
 import { Playlist } from '../playlists/playlist.entity';
 import { PlaylistSong } from '../playlists/playlist-song.entity';
-import { Friendship } from '../friends/friendship.entity';
 
 const SEED_SONGS = [
   { externalId: '1', title: 'Bohemian Rhapsody', artist: 'Queen', albumArt: 'https://picsum.photos/seed/queen/100/100' },
@@ -27,7 +26,6 @@ export class SeedService implements OnModuleInit {
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(Playlist) private playlistRepo: Repository<Playlist>,
     @InjectRepository(PlaylistSong) private psRepo: Repository<PlaylistSong>,
-    @InjectRepository(Friendship) private friendshipRepo: Repository<Friendship>,
   ) {}
 
   async onModuleInit() {
@@ -72,13 +70,6 @@ export class SeedService implements OnModuleInit {
       this.psRepo.create({ playlistId: pl3.id, songId: songs[9].id, sortOrder: 2 }),
     ]);
 
-    await this.friendshipRepo.save(
-      [0, 1, 2].flatMap((i) => [
-        this.friendshipRepo.create({ userId: u4.id, friendId: [u1, u2, u3][i].id }),
-        this.friendshipRepo.create({ userId: [u1, u2, u3][i].id, friendId: u4.id }),
-      ]),
-    );
-
-    console.log('✅ Seed complete: 10 songs, 4 users, 3 playlists, friendships');
+    console.log('✅ Seed complete: 10 songs, 4 users, 3 playlists');
   }
 }

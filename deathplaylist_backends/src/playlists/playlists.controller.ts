@@ -88,10 +88,10 @@ export class PlaylistsController {
     return playlists.map((p) => this.playlistsService.formatPlaylist(p));
   }
 
-  @Get('friends')
+  @Get('public')
   @UseGuards(JwtAuthGuard)
-  async getFriendsPlaylists(@Request() req: { user: { userId: string } }) {
-    const playlists = await this.playlistsService.getFriendsPlaylists(
+  async getPublicPlaylists(@Request() req: { user: { userId: string } }) {
+    const playlists = await this.playlistsService.getPublicPlaylists(
       req.user.userId,
     );
     return playlists.map((p) => this.playlistsService.formatPlaylist(p));

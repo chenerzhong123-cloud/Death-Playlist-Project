@@ -14,8 +14,8 @@ export class ShareController {
     return this.shareService.getShareData(id, baseUrl);
   }
 
-  @Get(':id/wxacode')
-  async getWxaCode(
+  @Get(':id/qrcode')
+  async getQRCode(
     @Param('id') id: string,
     @Req() req: Request,
     @Res() res: Response,
@@ -23,23 +23,14 @@ export class ShareController {
     const protocol = req.protocol;
     const host = req.get('host');
     const baseUrl = `${protocol}://${host}`;
-    const shareUrl = `${baseUrl}/api/share/${id}`;
 
     try {
-      const buffer = await this.shareService.getWxaCode(id);
+      const buffer = await this.shareService.getQRCode(id, baseUrl);
       res.type('image/png');
       res.set('Cache-Control', 'public, max-age=86400');
       res.send(buffer);
     } catch {
-      // Fallback: proxy QR image instead of redirect (wx.downloadFile can't follow redirects)
-      try {
-        const buffer = await this.shareService.getFallbackQR(shareUrl);
-        res.type('image/png');
-        res.set('Cache-Control', 'public, max-age=86400');
-        res.send(buffer);
-      } catch {
-        res.status(500).send('Failed to generate QR code');
-      }
+      res.status(500).send('Failed to generate QR code');
     }
   }
 }

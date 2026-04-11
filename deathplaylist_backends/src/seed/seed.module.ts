@@ -4,12 +4,11 @@ import { Song } from '../songs/song.entity';
 import { User } from '../users/user.entity';
 import { Playlist } from '../playlists/playlist.entity';
 import { PlaylistSong } from '../playlists/playlist-song.entity';
-import { Friendship } from '../friends/friendship.entity';
 import { SeedService } from './seed.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Song, User, Playlist, PlaylistSong, Friendship]),
+    TypeOrmModule.forFeature([Song, User, Playlist, PlaylistSong]),
   ],
   providers: [SeedService],
   exports: [SeedService],

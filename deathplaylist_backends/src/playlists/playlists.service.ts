@@ -4,10 +4,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Playlist } from './playlist.entity';
 import { PlaylistSong } from './playlist-song.entity';
-import { Friendship } from '../friends/friendship.entity';
 import { SongsService } from '../songs/songs.service';
 
 const MAX_SONGS = 9;
@@ -26,8 +25,6 @@ export class PlaylistsService {
     private playlistRepo: Repository<Playlist>,
     @InjectRepository(PlaylistSong)
     private playlistSongRepo: Repository<PlaylistSong>,
-    @InjectRepository(Friendship)
-    private friendshipRepo: Repository<Friendship>,
     private songsService: SongsService,
   ) {}
 
@@ -129,18 +126,15 @@ export class PlaylistsService {
     await this.playlistRepo.remove(playlist);
   }
 
-  async getFriendsPlaylists(userId: string): Promise<Playlist[]> {
-    const friendships = await this.friendshipRepo.find({
-      where: { userId },
-    });
-    if (friendships.length === 0) return [];
-
-    const friendIds = friendships.map((f) => f.friendId);
-    return this.playlistRepo.find({
-      where: { userId: In(friendIds) },
+  async getPublicPlaylists(excludeUserId?: string): Promise<Playlist[]> {
+    const playlists = await this.playlistRepo.find({
       relations: ['user', 'playlistSongs', 'playlistSongs.song'],
       order: { updatedAt: 'DESC' },
     });
+    if (excludeUserId) {
+      return playlists.filter((p) => p.userId !== excludeUserId);
+    }
+    return playlists;
   }
 
   async incrementLikes(id: string): Promise<void> {

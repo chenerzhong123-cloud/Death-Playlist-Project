@@ -32,6 +32,20 @@ export class UsersService {
     return user;
   }
 
+  async findOrCreateByDeviceId(deviceId: string): Promise<User> {
+    let user = await this.userRepo.findOne({ where: { deviceId } });
+    if (!user) {
+      const shortId = deviceId.substring(0, 4);
+      user = this.userRepo.create({
+        deviceId,
+        nickname: `用户${shortId}`,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(deviceId)}`,
+      });
+      user = await this.userRepo.save(user);
+    }
+    return user;
+  }
+
   async updateProfile(
     id: string,
     data: { nickname?: string; avatar?: string },
