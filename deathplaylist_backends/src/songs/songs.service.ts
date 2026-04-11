@@ -25,14 +25,14 @@ export class SongsService {
     private songRepo: Repository<Song>,
   ) {}
 
-  async search(query: string, limit = 20): Promise<Song[]> {
+  async search(query: string, limit = 20, offset = 0): Promise<Song[]> {
     if (!query.trim()) {
-      return this.songRepo.find({ take: limit });
+      return this.songRepo.find({ take: limit, skip: offset });
     }
 
     // Try iTunes Search API first, cache results locally
     try {
-      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=${limit}&country=CN`;
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=${limit}&offset=${offset}&country=CN`;
       const res = await fetch(url);
       const data = (await res.json()) as ITunesResponse;
 

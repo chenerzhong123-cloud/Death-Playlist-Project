@@ -6,10 +6,15 @@ export class SongsController {
   constructor(private songsService: SongsService) {}
 
   @Get('search')
-  async search(@Query('q') query: string, @Query('limit') limit?: string) {
+  async search(
+    @Query('q') query: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
     const songs = await this.songsService.search(
       query || '',
       limit ? parseInt(limit, 10) : 20,
+      offset ? parseInt(offset, 10) : 0,
     );
     return songs.map((s) => ({
       id: s.id,
