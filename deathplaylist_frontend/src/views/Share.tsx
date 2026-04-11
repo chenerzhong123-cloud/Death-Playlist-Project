@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Download, Link2, User } from 'lucide-react';
 import { API_BASE } from '../lib/api';
@@ -28,7 +28,7 @@ const loadImg = (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
-/** Draw the share card using Canvas 2D API, completely bypassing html2canvas */
+/** Draw the share card using Canvas 2D API */
 async function drawShareCard(opts: {
   userName: string;
   intro: string;
@@ -40,7 +40,7 @@ async function drawShareCard(opts: {
   const PAD = 48;
   const CARD_R = 48;
 
-  // Measure text to compute dynamic height
+  // Measure canvas for text wrapping
   const measureCanvas = document.createElement('canvas');
   const measureCtx = measureCanvas.getContext('2d')!;
 
@@ -51,7 +51,15 @@ async function drawShareCard(opts: {
   const titleY = PAD + 80;
   const introY = titleY + 50;
   const songsStartY = introY + 60;
-  const songsEndY = songsStartY + songsBlockH;
+
+  // Intro text wrapping to compute actual height
+  const introText = opts.intro || '';
+  const maxIntroW = W - PAD * 2 - 40;
+  const introLines = wrapText(measureCtx, introText, maxIntroW, 'italic 20px system-ui, -apple-system, sans-serif');
+  const introBlockH = Math.min(introLines.length, 3) * 28;
+  const actualSongsStartY = Math.max(songsStartY, introY + introBlockH + 20);
+
+  const songsEndY = actualSongsStartY + songsBlockH;
   const footerY = songsEndY + 40;
   const H = footerY + 120;
 
@@ -97,10 +105,6 @@ async function drawShareCard(opts: {
   // Intro
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.font = 'italic 20px system-ui, -apple-system, sans-serif';
-  // Wrap intro text
-  const introText = opts.intro || '';
-  const maxIntroW = W - PAD * 2 - 40;
-  const introLines = wrapText(measureCtx, introText, maxIntroW, 'italic 20px system-ui, -apple-system, sans-serif');
   let curY = introY;
   for (const line of introLines.slice(0, 3)) {
     ctx.fillText(line, W / 2, curY);
@@ -108,41 +112,36 @@ async function drawShareCard(opts: {
   }
 
   // Songs
-  const songStartY2 = Math.max(songsStartY, curY + 20);
   ctx.textAlign = 'left';
-
   for (let i = 0; i < opts.songs.length; i++) {
     const song = opts.songs[i];
-    const y = songStartY2 + i * (songRowH + gapBetweenSongs);
+    const y = actualSongsStartY + i * (songRowH + gapBetweenSongs);
 
-    // Index number
+    // Index
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
     ctx.font = '16px monospace';
     ctx.fillText(String(i + 1).padStart(2, '0'), PAD, y + 30);
 
     // Album art
-    let artLoaded = false;
     try {
       const artImg = await loadImg(proxyUrl(song.albumArt));
       ctx.drawImage(artImg, PAD + 40, y + 4, 56, 56);
-      artLoaded = true;
     } catch {}
 
     const textX = PAD + 112;
+    const titleMaxW = W - textX - PAD - 20;
 
     // Song title
     ctx.fillStyle = '#ffffff';
     ctx.font = '22px system-ui, -apple-system, sans-serif';
-    const titleMaxW = W - textX - PAD - 20;
-    const displayTitle = truncateText(ctx, song.title, titleMaxW);
-    ctx.fillText(displayTitle, textX, y + 26);
+    ctx.fillText(truncateText(ctx, song.title, titleMaxW), textX, y + 26);
 
     // Song artist
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.font = '18px system-ui, -apple-system, sans-serif';
     ctx.fillText(truncateText(ctx, song.artist, titleMaxW), textX, y + 50);
 
-    // Separator line
+    // Separator
     if (i < opts.songs.length - 1) {
       ctx.fillStyle = 'rgba(255,255,255,0.05)';
       ctx.fillRect(PAD, y + songRowH + gapBetweenSongs / 2 - 0.5, W - PAD * 2, 1);
@@ -150,7 +149,7 @@ async function drawShareCard(opts: {
   }
 
   // Footer
-  const actualFooterY = songStartY2 + opts.songs.length * (songRowH + gapBetweenSongs) + 20;
+  const actualFooterY = actualSongsStartY + opts.songs.length * (songRowH + gapBetweenSongs) + 20;
   ctx.fillStyle = 'rgba(255,255,255,0.05)';
   ctx.fillRect(PAD, actualFooterY, W - PAD * 2, 1);
 
@@ -158,12 +157,10 @@ async function drawShareCard(opts: {
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.font = 'bold 16px system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'left';
-  ctx.letterSpacing = '3px';
   ctx.fillText('死 亡 歌 单', PAD + 16, footerTextY);
 
   ctx.fillStyle = 'rgba(255,255,255,0.15)';
   ctx.font = 'italic 12px system-ui, -apple-system, sans-serif';
-  ctx.letterSpacing = '0px';
   ctx.fillText('扫码查看完整歌单', PAD + 16, footerTextY + 22);
 
   // QR code
@@ -172,7 +169,6 @@ async function drawShareCard(opts: {
     const qrSize = 96;
     const qrX = W - PAD - qrSize - 8;
     const qrY = actualFooterY + 8;
-
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.roundRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 16);
@@ -211,62 +207,35 @@ function truncateText(ctx: CanvasRenderingContext2D, text: string, maxWidth: num
 
 export function Share({ playlistId, userName, playlistIntro, suggestedIntro, addedSongs, bgImage, isViewing, onGoBack, onToast }: ShareProps) {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [showNamePopup, setShowNamePopup] = useState(false);
-  const [surname, setSurname] = useState(() => localStorage.getItem('user_surname') || '');
-  const [gender, setGender] = useState<'先生' | '女士'>(() => (localStorage.getItem('user_gender') as '先生' | '女士') || '先生');
-  const [surnameInput, setSurnameInput] = useState(surname);
-  const [genderInput, setGenderInput] = useState<'先生' | '女士'>(gender);
 
   const shareUrl = `http://47.103.81.95/?playlist=${playlistId}`;
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareUrl)}`;
 
-  const displayName = surname ? `${surname}${gender}` : userName;
-
-  const saveImage = async (name: string) => {
+  const saveImage = async () => {
     try {
       const dataUrl = await drawShareCard({
-        userName: name,
+        userName,
         intro: playlistIntro || suggestedIntro,
         songs: addedSongs,
         bgImage,
         qrSrc,
       });
+      // Single download via blob to avoid duplicate triggers
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = '死亡歌单.jpg';
-      link.href = dataUrl;
+      link.href = blobUrl;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
       setImagePreviewUrl(dataUrl);
     } catch (e) {
       console.error('Save image failed:', e);
       onToast('生成图片失败');
     }
-  };
-
-  const handleSaveClick = () => {
-    if (!surname) {
-      setSurnameInput('');
-      setGenderInput('先生');
-      setShowNamePopup(true);
-    } else {
-      saveImage(displayName);
-    }
-  };
-
-  const handleNameConfirm = () => {
-    if (!surnameInput.trim()) {
-      onToast('请输入你的姓');
-      return;
-    }
-    const s = surnameInput.trim();
-    const g = genderInput;
-    setSurname(s);
-    setGender(g);
-    localStorage.setItem('user_surname', s);
-    localStorage.setItem('user_gender', g);
-    setShowNamePopup(false);
-    saveImage(`${s}${g}`);
   };
 
   const copyLink = async () => {
@@ -301,7 +270,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
         exit={{ opacity: 0 }}
         className="relative z-10 flex flex-col items-center h-screen max-w-2xl mx-auto bg-black/90 backdrop-blur-3xl overflow-y-auto pt-12 pb-24 px-6"
       >
-        {/* Share Card — visual only, not used for canvas capture */}
+        {/* Share Card — visual only, canvas draws independently */}
         <div
           className="w-full max-w-[340px] bg-zinc-900 border-[12px] border-white/10 rounded-[40px] overflow-hidden shadow-2xl relative flex flex-col shrink-0 select-none"
           style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
@@ -314,7 +283,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
 
           <div className="relative p-8 flex flex-col space-y-6">
             <div className="text-center space-y-3">
-              <h2 className="text-2xl font-bold italic serif">{displayName}的死亡歌单</h2>
+              <h2 className="text-2xl font-bold italic serif">{userName}的死亡歌单</h2>
               <p className="text-xs text-white/70 italic px-4 leading-relaxed">{playlistIntro || suggestedIntro}</p>
             </div>
 
@@ -350,19 +319,9 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
 
         {/* Share Actions */}
         <div className="mt-8 w-full max-w-[340px] space-y-4 shrink-0">
-          {/* Name display / edit */}
-          {surname && (
-            <button
-              onClick={() => { setSurnameInput(surname); setGenderInput(gender); setShowNamePopup(true); }}
-              className="w-full flex items-center justify-center gap-2 py-2 text-white/40 hover:text-white/60 transition-colors text-xs"
-            >
-              <User className="w-3 h-3" />
-              <span>{displayName} · 点击修改</span>
-            </button>
-          )}
           <div className="flex gap-4">
             <button
-              onClick={handleSaveClick}
+              onClick={saveImage}
               className="flex-1 flex flex-col items-center gap-2 p-3 bg-white/5 rounded-2xl hover:bg-white/10 active:bg-white/15 transition-colors"
             >
               <Download className="w-5 h-5" />
@@ -384,72 +343,6 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
           </button>
         </div>
       </motion.main>
-
-      {/* Name/Gender Popup */}
-      <AnimatePresence>
-        {showNamePopup && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[150] bg-black/80 flex items-center justify-center p-6"
-            onClick={() => setShowNamePopup(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-zinc-900 rounded-3xl p-6 w-full max-w-xs space-y-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-bold text-center">输入你的称呼</h3>
-              <p className="text-xs text-white/40 text-center">用于在歌单卡片上显示</p>
-
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={surnameInput}
-                  onChange={(e) => setSurnameInput(e.target.value.replace(/\s/g, ''))}
-                  placeholder="请输入你的姓"
-                  maxLength={2}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-white/30 text-center text-lg"
-                  autoFocus
-                />
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setGenderInput('先生')}
-                    className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
-                      genderInput === '先生'
-                        ? 'bg-white text-black'
-                        : 'bg-white/5 text-white/40 hover:bg-white/10'
-                    }`}
-                  >
-                    先生
-                  </button>
-                  <button
-                    onClick={() => setGenderInput('女士')}
-                    className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
-                      genderInput === '女士'
-                        ? 'bg-white text-black'
-                        : 'bg-white/5 text-white/40 hover:bg-white/10'
-                    }`}
-                  >
-                    女士
-                  </button>
-                </div>
-              </div>
-
-              <button
-                onClick={handleNameConfirm}
-                className="w-full py-3 bg-white text-black rounded-xl font-bold hover:bg-white/90 transition-colors"
-              >
-                确认
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Image Preview Overlay */}
       <AnimatePresence>

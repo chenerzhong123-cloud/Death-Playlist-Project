@@ -38,6 +38,12 @@ const randomIntro = () => INTRO_SUGGESTIONS[Math.floor(Math.random() * INTRO_SUG
 
 type View = 'landing' | 'selection' | 'picker' | 'preview' | 'share' | 'friends';
 
+function getDisplayName(fallback: string): string {
+  const surname = localStorage.getItem('user_surname');
+  const gender = localStorage.getItem('user_gender');
+  return surname ? `${surname}${gender || '先生'}` : fallback;
+}
+
 export default function App() {
   const [view, setView] = useState<View>('landing');
   const [bgImage] = useState('https://images.unsplash.com/photo-1514525253361-bee871871a340b?auto=format&fit=crop&q=80&w=1920');
@@ -47,6 +53,13 @@ export default function App() {
   // Read-only playlist viewing from URL params
   const [viewingPlaylistId, setViewingPlaylistId] = useState<string | null>(null);
   const [viewingUserName, setViewingUserName] = useState<string>('用户');
+
+  // Name/gender popup state
+  const [showNamePopup, setShowNamePopup] = useState(false);
+  const [surnameInput, setSurnameInput] = useState('');
+  const [genderInput, setGenderInput] = useState<'先生' | '女士'>('先生');
+  // Force re-render when name changes
+  const [nameVersion, setNameVersion] = useState(0);
 
   const { user, setUser, authLoading } = useAuth();
 
@@ -116,6 +129,17 @@ export default function App() {
   };
 
   const handleShare = async () => {
+    // Check if name is set — if not, show popup first
+    if (!localStorage.getItem('user_surname')) {
+      setSurnameInput('');
+      setGenderInput('先生');
+      setShowNamePopup(true);
+      return;
+    }
+    await doShare();
+  };
+
+  const doShare = async () => {
     try {
       await savePlaylist(playlistIntro || suggestedIntro, addedSongs);
       setViewingPlaylistId(null);
@@ -123,6 +147,18 @@ export default function App() {
     } catch {
       setToast('保存失败，请重试');
     }
+  };
+
+  const handleNameConfirm = async () => {
+    if (!surnameInput.trim()) {
+      setToast('请输入你的姓');
+      return;
+    }
+    localStorage.setItem('user_surname', surnameInput.trim());
+    localStorage.setItem('user_gender', genderInput);
+    setShowNamePopup(false);
+    setNameVersion(v => v + 1);
+    await doShare();
   };
 
   if (authLoading) {
@@ -200,7 +236,7 @@ export default function App() {
 
         {view === 'preview' && (
           <Preview
-            userName={user?.nickname || '用户'}
+            userName={getDisplayName(user?.nickname || '用户')}
             playlistIntro={playlistIntro}
             suggestedIntro={suggestedIntro}
             addedSongs={addedSongs}
@@ -211,26 +247,24 @@ export default function App() {
         )}
 
         {view === 'share' && (() => {
-          const storedSurname = localStorage.getItem('user_surname');
-          const storedGender = localStorage.getItem('user_gender');
           const shareUserName = viewingPlaylistId
             ? viewingUserName
-            : (storedSurname ? `${storedSurname}${storedGender || '先生'}` : (user?.nickname || '用户'));
+            : getDisplayName(user?.nickname || '用户');
           return (
             <Share
-            playlistId={viewingPlaylistId || myPlaylistId || ''}
-            userName={shareUserName}
-            playlistIntro={playlistIntro}
-            suggestedIntro={suggestedIntro}
-            addedSongs={addedSongs}
-            bgImage={bgImage}
-            isViewing={!!viewingPlaylistId}
-            onGoBack={() => {
-              setViewingPlaylistId(null);
-              setView(viewingPlaylistId ? 'landing' : 'preview');
-            }}
-            onToast={setToast}
-          />
+              playlistId={viewingPlaylistId || myPlaylistId || ''}
+              userName={shareUserName}
+              playlistIntro={playlistIntro}
+              suggestedIntro={suggestedIntro}
+              addedSongs={addedSongs}
+              bgImage={bgImage}
+              isViewing={!!viewingPlaylistId}
+              onGoBack={() => {
+                setViewingPlaylistId(null);
+                setView(viewingPlaylistId ? 'landing' : 'preview');
+              }}
+              onToast={setToast}
+            />
           );
         })()}
 
@@ -242,6 +276,72 @@ export default function App() {
             addedSongs={addedSongs}
             onGoBack={() => setView('landing')}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Name/Gender Popup — shown at App level when sharing without a name */}
+      <AnimatePresence>
+        {showNamePopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] bg-black/80 flex items-center justify-center p-6"
+            onClick={() => setShowNamePopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-zinc-900 rounded-3xl p-6 w-full max-w-xs space-y-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-center">输入你的称呼</h3>
+              <p className="text-xs text-white/40 text-center">用于在歌单卡片上显示</p>
+
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={surnameInput}
+                  onChange={(e) => setSurnameInput(e.target.value.replace(/\s/g, ''))}
+                  placeholder="请输入你的姓"
+                  maxLength={2}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-white/30 text-center text-lg"
+                  autoFocus
+                />
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setGenderInput('先生')}
+                    className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+                      genderInput === '先生'
+                        ? 'bg-white text-black'
+                        : 'bg-white/5 text-white/40 hover:bg-white/10'
+                    }`}
+                  >
+                    先生
+                  </button>
+                  <button
+                    onClick={() => setGenderInput('女士')}
+                    className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+                      genderInput === '女士'
+                        ? 'bg-white text-black'
+                        : 'bg-white/5 text-white/40 hover:bg-white/10'
+                    }`}
+                  >
+                    女士
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handleNameConfirm}
+                className="w-full py-3 bg-white text-black rounded-xl font-bold hover:bg-white/90 transition-colors"
+              >
+                确认
+              </button>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

@@ -14,13 +14,36 @@ export function Landing({ hasPlaylist, onNewPlaylist, onFriends }: LandingProps)
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, x: -20 }}
-      className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center max-w-lg mx-auto"
+      className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center max-w-lg mx-auto overflow-hidden"
     >
+      {/* Light beam effect — ported from miniprogram */}
+      <div
+        className="absolute inset-0 z-0 pointer-events-none"
+        style={{
+          background: [
+            'radial-gradient(ellipse at 95% 2%, rgba(255,255,255,0.25) 0%, transparent 27%)',
+            `conic-gradient(
+              from 180deg at 100% 0%,
+              transparent 0deg,
+              rgba(255,255,255,0.02) 8deg,
+              rgba(255,255,255,0.08) 16deg,
+              rgba(255,255,255,0.16) 21deg,
+              rgba(255,255,255,0.2) 26deg,
+              rgba(255,255,255,0.22) 30deg,
+              rgba(255,255,255,0.2) 34deg,
+              rgba(255,255,255,0.16) 39deg,
+              rgba(255,255,255,0.08) 46deg,
+              rgba(255,255,255,0.02) 52deg,
+              transparent 57deg
+            )`,
+          ].join(', '),
+        }}
+      />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="space-y-8"
+        className="relative z-10 space-y-8"
       >
         <div className="space-y-4">
           <motion.div
