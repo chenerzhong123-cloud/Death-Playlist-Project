@@ -46,7 +46,6 @@ function getDisplayName(fallback: string): string {
 
 export default function App() {
   const [view, setView] = useState<View>('landing');
-  const [bgImage] = useState('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=1920');
   const [toast, setToast] = useState<string | null>(null);
   const suggestedIntro = useMemo(() => randomIntro(), []);
 
@@ -171,19 +170,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-white/20 overflow-hidden relative">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 z-0 transition-all duration-1000 ease-in-out"
-        style={{
-          backgroundImage: `url(${bgImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black" />
-      </div>
-
       {/* Toast */}
       <AnimatePresence>
         {toast && (
@@ -257,7 +243,6 @@ export default function App() {
               playlistIntro={playlistIntro}
               suggestedIntro={suggestedIntro}
               addedSongs={addedSongs}
-              bgImage={bgImage}
               isViewing={!!viewingPlaylistId}
               onGoBack={() => {
                 setViewingPlaylistId(null);

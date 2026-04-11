@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Download, Link2, User } from 'lucide-react';
+import { Download, Link2 } from 'lucide-react';
 import { API_BASE } from '../lib/api';
 import type { Song } from '../lib/api';
 
@@ -10,7 +10,6 @@ interface ShareProps {
   playlistIntro: string;
   suggestedIntro: string;
   addedSongs: Song[];
-  bgImage: string;
   isViewing?: boolean;
   onGoBack: () => void;
   onToast: (msg: string) => void;
@@ -33,7 +32,6 @@ async function drawShareCard(opts: {
   userName: string;
   intro: string;
   songs: Song[];
-  bgImage: string;
   qrSrc: string;
 }): Promise<string> {
   const W = 680;
@@ -73,21 +71,6 @@ async function drawShareCard(opts: {
   ctx.beginPath();
   ctx.roundRect(0, 0, W, H, CARD_R);
   ctx.fill();
-
-  // Semi-transparent bg image
-  try {
-    const bgImg = await loadImg(proxyUrl(opts.bgImage));
-    ctx.save();
-    ctx.globalAlpha = 0.15;
-    ctx.beginPath();
-    ctx.roundRect(0, 0, W, H, CARD_R);
-    ctx.clip();
-    const scale = Math.max(W / bgImg.width, H / bgImg.height);
-    const dw = bgImg.width * scale;
-    const dh = bgImg.height * scale;
-    ctx.drawImage(bgImg, (W - dw) / 2, (H - dh) / 2, dw, dh);
-    ctx.restore();
-  } catch {}
 
   // Border
   ctx.strokeStyle = 'rgba(255,255,255,0.1)';
@@ -205,7 +188,7 @@ function truncateText(ctx: CanvasRenderingContext2D, text: string, maxWidth: num
   return truncated + '...';
 }
 
-export function Share({ playlistId, userName, playlistIntro, suggestedIntro, addedSongs, bgImage, isViewing, onGoBack, onToast }: ShareProps) {
+export function Share({ playlistId, userName, playlistIntro, suggestedIntro, addedSongs, isViewing, onGoBack, onToast }: ShareProps) {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
   const shareUrl = `http://47.103.81.95/?playlist=${playlistId}`;
@@ -217,7 +200,6 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
         userName,
         intro: playlistIntro || suggestedIntro,
         songs: addedSongs,
-        bgImage,
         qrSrc,
       });
       // Single download via blob to avoid duplicate triggers
@@ -275,12 +257,6 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
           className="w-full max-w-[340px] bg-zinc-900 border-[12px] border-white/10 rounded-[40px] overflow-hidden shadow-2xl relative flex flex-col shrink-0 select-none"
           style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
         >
-          <div
-            data-bg
-            className="absolute inset-0 opacity-20 pointer-events-none"
-            style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover' }}
-          />
-
           <div className="relative p-8 flex flex-col space-y-6">
             <div className="text-center space-y-3">
               <h2 className="text-2xl font-bold italic serif">{userName}的死亡歌单</h2>
