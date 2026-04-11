@@ -32,12 +32,45 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
     return canvas.toDataURL('image/jpeg', 0.7);
   };
 
-  const copyLink = async () => {
+  const saveImage = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      const dataUrl = await captureShareCard();
+      // Try to download directly via <a> tag
+      const link = document.createElement('a');
+      link.download = `死亡歌单-${userName}.jpg`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      // Also show preview for mobile users who need to long-press save
+      setImagePreviewUrl(dataUrl);
+    } catch {
+      onToast('生成图片失败');
+    }
+  };
+
+  const copyLink = async () => {
+    // Try clipboard API first (requires HTTPS or localhost)
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        onToast('链接已复制');
+        return;
+      } catch {}
+    }
+    // Fallback for HTTP: use textarea + execCommand
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = shareUrl;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
       onToast('链接已复制');
     } catch {
-      onToast('复制失败，请手动复制');
+      onToast('复制失败');
     }
   };
 
@@ -50,10 +83,11 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
         exit={{ opacity: 0 }}
         className="relative z-10 flex flex-col items-center h-screen max-w-2xl mx-auto bg-black/90 backdrop-blur-3xl overflow-y-auto pt-12 pb-24 px-6"
       >
-        {/* Share Card */}
+        {/* Share Card - select-none prevents text selection on long press */}
         <div
           ref={shareCardRef}
-          className="w-full max-w-[340px] bg-zinc-900 border-[12px] border-white/10 rounded-[40px] overflow-hidden shadow-2xl relative flex flex-col shrink-0"
+          className="w-full max-w-[340px] bg-zinc-900 border-[12px] border-white/10 rounded-[40px] overflow-hidden shadow-2xl relative flex flex-col shrink-0 select-none"
+          style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
         >
           <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover' }} />
 
@@ -101,22 +135,15 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
         <div className="mt-8 w-full max-w-[340px] space-y-4 shrink-0">
           <div className="flex gap-4">
             <button
-              onClick={async () => {
-                try {
-                  const url = await captureShareCard();
-                  setImagePreviewUrl(url);
-                } catch {
-                  onToast('生成图片失败');
-                }
-              }}
-              className="flex-1 flex flex-col items-center gap-2 p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors"
+              onClick={saveImage}
+              className="flex-1 flex flex-col items-center gap-2 p-3 bg-white/5 rounded-2xl hover:bg-white/10 active:bg-white/15 transition-colors"
             >
               <Download className="w-5 h-5" />
               <span className="text-[10px]">保存</span>
             </button>
             <button
               onClick={copyLink}
-              className="flex-1 flex flex-col items-center gap-2 p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors"
+              className="flex-1 flex flex-col items-center gap-2 p-3 bg-white/5 rounded-2xl hover:bg-white/10 active:bg-white/15 transition-colors"
             >
               <Link2 className="w-5 h-5" />
               <span className="text-[10px]">复制链接</span>
@@ -140,7 +167,12 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] bg-black/90 flex flex-col items-center justify-center p-6"
           >
-            <img src={imagePreviewUrl} alt="死亡歌单" className="max-w-full max-h-[70vh] rounded-2xl shadow-2xl" />
+            <img
+              src={imagePreviewUrl}
+              alt="死亡歌单"
+              className="max-w-full max-h-[70vh] rounded-2xl shadow-2xl"
+              style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'default' }}
+            />
             <p className="mt-4 text-white/50 text-sm">长按图片保存到相册</p>
             <button
               onClick={() => setImagePreviewUrl(null)}

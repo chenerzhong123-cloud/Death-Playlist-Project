@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Music2, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 interface LandingProps {
   hasPlaylist: boolean;
@@ -27,9 +27,13 @@ export function Landing({ hasPlaylist, onNewPlaylist, onFriends }: LandingProps)
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="inline-flex items-center justify-center w-24 h-24 mb-4 border border-white/20 rounded-full backdrop-blur-sm bg-white/5"
+            className="flex justify-center mb-4"
           >
-            <Music2 className="w-12 h-12 text-white/80" strokeWidth={1} />
+            <img
+              src="/logo.png"
+              alt="死亡歌单"
+              className="w-24 h-24 rounded-full border border-white/20"
+            />
           </motion.div>
 
           <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl italic serif">
@@ -37,9 +41,9 @@ export function Landing({ hasPlaylist, onNewPlaylist, onFriends }: LandingProps)
           </h1>
 
           <p className="text-lg text-white/70 font-light leading-relaxed max-w-xs mx-auto">
-            不想自己的葬礼还在吹唢呐放哀乐？
+            哀乐和唢呐太千篇一律？
             <br />
-            选择你的葬礼上播放的音乐吧
+            来定义自己生命的最后乐章
           </p>
         </div>
 
