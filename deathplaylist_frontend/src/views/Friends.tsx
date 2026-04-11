@@ -111,11 +111,15 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
       <div className="flex-1 overflow-y-auto p-4 pb-8">
         {loading ? (
           <div className="py-12 text-center text-white/30 text-sm">加载中...</div>
-        ) : !hasMine && !hasOthers ? (
-          <div className="py-12 text-center text-white/20 text-xs">
-            还没有人创建歌单
-            <br />
-            <span className="text-white/10">成为第一个创建死亡歌单的人吧</span>
+        ) : !hasMine && publicPlaylists.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center py-20 space-y-4">
+            <div className="w-20 h-20 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-3xl opacity-30">
+              🪦
+            </div>
+            <div className="text-center space-y-2">
+              <p className="text-white/30 text-sm">还没有人创建歌单</p>
+              <p className="text-white/15 text-xs">成为第一个定义自己生命最后乐章的人</p>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
