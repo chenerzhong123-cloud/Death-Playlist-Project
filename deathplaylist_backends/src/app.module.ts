@@ -6,6 +6,7 @@ import { SongsModule } from './songs/songs.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { ShareModule } from './share/share.module';
 import { SeedModule } from './seed/seed.module';
+import { StatsModule } from './stats/stats.module';
 import * as express from 'express';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -24,6 +25,7 @@ import { existsSync } from 'fs';
     PlaylistsModule,
     ShareModule,
     SeedModule,
+    StatsModule,
   ],
 })
 export class AppModule implements NestModule {
