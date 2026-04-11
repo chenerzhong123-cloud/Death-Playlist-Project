@@ -30,6 +30,8 @@ jobs:
 
             # 拉取后端最新代码
             cd /root/deathplaylist_backends
+            git checkout -- . 2>/dev/null || true
+            git clean -fd static/ 2>/dev/null || true
             git pull origin main
 
             # 构建并部署 Docker
