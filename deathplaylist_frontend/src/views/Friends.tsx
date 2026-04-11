@@ -89,7 +89,6 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
     : null;
 
   const hasMine = !!myCard;
-  const hasOthers = publicPlaylists.length > 0;
 
   return (
     <motion.main
@@ -122,15 +121,6 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
           <div className="space-y-6">
             {/* My playlist — pinned at top */}
             {myCard && <PlaylistCard fp={myCard} isMine />}
-
-            {/* Divider between mine and others — compact */}
-            {hasMine && hasOthers && (
-              <div className="flex items-center gap-3 -my-1.5">
-                <div className="flex-1 h-px bg-white/10" />
-                <span className="text-[10px] text-white/20 italic whitespace-nowrap">你也是自己的好朋友</span>
-                <div className="flex-1 h-px bg-white/10" />
-              </div>
-            )}
 
             {/* Other playlists */}
             {publicPlaylists.map((fp) => (
