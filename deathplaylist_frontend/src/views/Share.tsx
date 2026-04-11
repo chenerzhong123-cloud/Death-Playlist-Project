@@ -1,29 +1,26 @@
 import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Download, MessageCircle } from 'lucide-react';
+import { Download, Link2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import type { Song } from '../lib/api';
 
-declare const wx: {
-  miniProgram: {
-    postMessage: (params: { data: Record<string, string> }) => void;
-  };
-};
-
 interface ShareProps {
+  playlistId: string;
   userName: string;
   playlistIntro: string;
   suggestedIntro: string;
   addedSongs: Song[];
   bgImage: string;
+  isViewing?: boolean;
   onGoBack: () => void;
   onToast: (msg: string) => void;
 }
 
-export function Share({ userName, playlistIntro, suggestedIntro, addedSongs, bgImage, onGoBack, onToast }: ShareProps) {
+export function Share({ playlistId, userName, playlistIntro, suggestedIntro, addedSongs, bgImage, isViewing, onGoBack, onToast }: ShareProps) {
   const shareCardRef = useRef<HTMLDivElement>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [showShareGuide, setShowShareGuide] = useState(false);
+
+  const shareUrl = `http://47.103.81.95/?playlist=${playlistId}`;
 
   const captureShareCard = async (): Promise<string> => {
     if (!shareCardRef.current) throw new Error('No card');
@@ -33,6 +30,15 @@ export function Share({ userName, playlistIntro, suggestedIntro, addedSongs, bgI
       backgroundColor: '#18181b',
     });
     return canvas.toDataURL('image/jpeg', 0.7);
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      onToast('链接已复制');
+    } catch {
+      onToast('复制失败，请手动复制');
+    }
   };
 
   return (
@@ -83,7 +89,7 @@ export function Share({ userName, playlistIntro, suggestedIntro, addedSongs, bgI
             </div>
             <div className="w-16 h-16 bg-white p-1 rounded-xl shadow-lg shrink-0">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`weixin://dl/business/?appid=wxd9305525bdda7423`)}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareUrl)}`}
                 alt="QR Code"
                 className="w-full h-full"
               />
@@ -109,26 +115,18 @@ export function Share({ userName, playlistIntro, suggestedIntro, addedSongs, bgI
               <span className="text-[10px]">保存</span>
             </button>
             <button
-              onClick={async () => {
-                try {
-                  const url = await captureShareCard();
-                  try { wx.miniProgram.postMessage({ data: { action: 'shareImage', image: url } }); } catch {}
-                  setShowShareGuide(true);
-                } catch {
-                  onToast('生成图片失败');
-                }
-              }}
+              onClick={copyLink}
               className="flex-1 flex flex-col items-center gap-2 p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors"
             >
-              <MessageCircle className="w-5 h-5" />
-              <span className="text-[10px]">微信好友</span>
+              <Link2 className="w-5 h-5" />
+              <span className="text-[10px]">复制链接</span>
             </button>
           </div>
           <button
             onClick={onGoBack}
             className="w-full py-2 text-white/40 hover:text-white transition-colors text-xs"
           >
-            返回预览
+            {isViewing ? '返回首页' : '返回预览'}
           </button>
         </div>
       </motion.main>
@@ -147,38 +145,6 @@ export function Share({ userName, playlistIntro, suggestedIntro, addedSongs, bgI
             <button
               onClick={() => setImagePreviewUrl(null)}
               className="mt-3 text-white/30 text-xs underline underline-offset-4"
-            >
-              关闭
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Share Guide Overlay */}
-      <AnimatePresence>
-        {showShareGuide && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/70 flex flex-col items-center"
-            onClick={() => setShowShareGuide(false)}
-          >
-            <div className="self-end mr-6 mt-4">
-              <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-                <path d="M30 8 L30 38" stroke="white" strokeWidth="2" strokeDasharray="4 4" />
-                <path d="M22 14 L30 6 L38 14" stroke="white" strokeWidth="2" fill="none" />
-                <circle cx="46" cy="10" r="16" fill="white" fillOpacity="0.15" />
-                <text x="46" y="14" textAnchor="middle" fill="white" fontSize="14">...</text>
-              </svg>
-            </div>
-            <div className="mt-2 text-center space-y-2 px-8">
-              <p className="text-white text-lg font-bold">点击右上角 ··· 转发给好友</p>
-              <p className="text-white/40 text-xs">图片已准备好，通过微信转发分享你的歌单</p>
-            </div>
-            <button
-              onClick={() => setShowShareGuide(false)}
-              className="mt-8 text-white/30 text-xs underline underline-offset-4"
             >
               关闭
             </button>

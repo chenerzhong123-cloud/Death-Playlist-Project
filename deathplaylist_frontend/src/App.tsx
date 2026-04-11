@@ -7,13 +7,13 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './hooks/useAuth';
 import { usePlaylist } from './hooks/usePlaylist';
-import { AuthPopup } from './components/AuthPopup';
 import { Landing } from './views/Landing';
 import { Selection } from './views/Selection';
 import { Picker } from './views/Picker';
 import { Preview } from './views/Preview';
 import { Share } from './views/Share';
 import { Friends } from './views/Friends';
+import { apiFetch } from './lib/api';
 import type { Song } from './lib/api';
 
 const INTRO_SUGGESTIONS = [
@@ -40,24 +40,47 @@ type View = 'landing' | 'selection' | 'picker' | 'preview' | 'share' | 'friends'
 
 export default function App() {
   const [view, setView] = useState<View>('landing');
-  const [bgImage] = useState('https://images.unsplash.com/photo-1514525253361-bee8718a340b?auto=format&fit=crop&q=80&w=1920');
+  const [bgImage] = useState('https://images.unsplash.com/photo-1514525253361-bee871871a340b?auto=format&fit=crop&q=80&w=1920');
   const [toast, setToast] = useState<string | null>(null);
   const suggestedIntro = useMemo(() => randomIntro(), []);
 
-  const {
-    user, authLoading, showAuthPopup, setShowAuthPopup,
-    authNickname, setAuthNickname, pendingAction, requireLogin,
-    handleLogin, autoLogin,
-  } = useAuth();
+  // Read-only playlist viewing from URL params
+  const [viewingPlaylistId, setViewingPlaylistId] = useState<string | null>(null);
+  const [viewingUserName, setViewingUserName] = useState<string>('用户');
+
+  const { user, setUser, authLoading } = useAuth();
 
   const {
     addedSongs, setAddedSongs, playlistIntro, setPlaylistIntro,
     myPlaylistId, loadMyPlaylist, savePlaylist,
   } = usePlaylist();
 
-  // Auto-login on mount
+  // Load my playlist when user is ready
   useEffect(() => {
-    autoLogin().then(u => { if (u) loadMyPlaylist(); });
+    if (user) loadMyPlaylist();
+  }, [user]);
+
+  // Handle ?playlist=xxx URL param for direct playlist viewing
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const playlistId = params.get('playlist');
+    if (playlistId) {
+      window.history.replaceState({}, '', window.location.pathname);
+      (async () => {
+        try {
+          const playlist = await apiFetch(`/playlists/${playlistId}`);
+          setAddedSongs(playlist.songs.map((s: any) => ({
+            id: s.id, title: s.title, artist: s.artist, albumArt: s.albumArt,
+          })));
+          setPlaylistIntro(playlist.intro || '');
+          setViewingPlaylistId(playlistId);
+          setViewingUserName(playlist.user?.name || '用户');
+          setView('share');
+        } catch {
+          setToast('歌单不存在');
+        }
+      })();
+    }
   }, []);
 
   // Toast auto-dismiss
@@ -67,16 +90,6 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
-
-  const onLogin = async () => {
-    try {
-      await handleLogin();
-      setToast('登录成功');
-      await loadMyPlaylist();
-    } catch {
-      setToast('登录失败，请重试');
-    }
-  };
 
   const toggleSong = (song: Song) => {
     setAddedSongs(prev => {
@@ -99,28 +112,26 @@ export default function App() {
       setToast('请先添加至少一首歌曲');
       return;
     }
-    if (!requireLogin()) {
-      pendingAction.current = () => setView('preview');
-      return;
-    }
     setView('preview');
   };
 
   const handleShare = async () => {
-    const doSave = async () => {
-      try {
-        await savePlaylist(playlistIntro || suggestedIntro, addedSongs);
-        setView('share');
-      } catch {
-        setToast('保存失败，请重试');
-      }
-    };
-    if (!requireLogin()) {
-      pendingAction.current = doSave;
-      return;
+    try {
+      await savePlaylist(playlistIntro || suggestedIntro, addedSongs);
+      setViewingPlaylistId(null);
+      setView('share');
+    } catch {
+      setToast('保存失败，请重试');
     }
-    await doSave();
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white/30 text-sm">加载中...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-white/20 overflow-hidden relative">
@@ -136,14 +147,6 @@ export default function App() {
         <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black" />
       </div>
-
-      <AuthPopup
-        show={showAuthPopup}
-        nickname={authNickname}
-        onNicknameChange={setAuthNickname}
-        onLogin={onLogin}
-        onClose={() => setShowAuthPopup(false)}
-      />
 
       {/* Toast */}
       <AnimatePresence>
@@ -209,12 +212,17 @@ export default function App() {
 
         {view === 'share' && (
           <Share
-            userName={user?.nickname || '用户'}
+            playlistId={viewingPlaylistId || myPlaylistId || ''}
+            userName={viewingPlaylistId ? viewingUserName : (user?.nickname || '用户')}
             playlistIntro={playlistIntro}
             suggestedIntro={suggestedIntro}
             addedSongs={addedSongs}
             bgImage={bgImage}
-            onGoBack={() => setView('preview')}
+            isViewing={!!viewingPlaylistId}
+            onGoBack={() => {
+              setViewingPlaylistId(null);
+              setView(viewingPlaylistId ? 'landing' : 'preview');
+            }}
             onToast={setToast}
           />
         )}
@@ -226,10 +234,6 @@ export default function App() {
             playlistIntro={playlistIntro}
             addedSongs={addedSongs}
             onGoBack={() => setView('landing')}
-            onLogin={() => {
-              pendingAction.current = () => setToast('');
-              setShowAuthPopup(true);
-            }}
           />
         )}
       </AnimatePresence>

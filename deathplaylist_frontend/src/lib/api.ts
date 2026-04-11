@@ -24,7 +24,7 @@ export interface AuthUser {
   avatar: string;
 }
 
-export interface FriendPlaylist {
+export interface PublicPlaylist {
   id: string;
   intro: string;
   user: { id: string; name: string; avatar: string };
