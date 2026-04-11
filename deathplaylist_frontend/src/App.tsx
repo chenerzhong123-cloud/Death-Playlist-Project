@@ -210,10 +210,16 @@ export default function App() {
           />
         )}
 
-        {view === 'share' && (
-          <Share
+        {view === 'share' && (() => {
+          const storedSurname = localStorage.getItem('user_surname');
+          const storedGender = localStorage.getItem('user_gender');
+          const shareUserName = viewingPlaylistId
+            ? viewingUserName
+            : (storedSurname ? `${storedSurname}${storedGender || '先生'}` : (user?.nickname || '用户'));
+          return (
+            <Share
             playlistId={viewingPlaylistId || myPlaylistId || ''}
-            userName={viewingPlaylistId ? viewingUserName : (user?.nickname || '用户')}
+            userName={shareUserName}
             playlistIntro={playlistIntro}
             suggestedIntro={suggestedIntro}
             addedSongs={addedSongs}
@@ -225,7 +231,8 @@ export default function App() {
             }}
             onToast={setToast}
           />
-        )}
+          );
+        })()}
 
         {view === 'friends' && (
           <Friends
