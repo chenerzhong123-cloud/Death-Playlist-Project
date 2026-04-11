@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig, loadEnv} from 'vite';
-import {browserslistToTargets} from 'lightningcss';
+import {browserslistToTargets, Features} from 'lightningcss';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
@@ -20,6 +20,7 @@ export default defineConfig(({mode}) => {
       transformer: 'lightningcss',
       lightningcss: {
         targets: browserslistToTargets(['chrome 60']),
+        exclude: Features.LabColors | Features.OklabColors | Features.ColorFunction,
       },
     },
     server: {

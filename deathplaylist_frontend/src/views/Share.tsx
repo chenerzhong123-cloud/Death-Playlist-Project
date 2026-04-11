@@ -20,50 +20,6 @@ interface ShareProps {
 const proxyUrl = (url: string) =>
   `${API_BASE}/utils/image-proxy?url=${encodeURIComponent(url)}`;
 
-// Canvas 2D context resolves any CSS color (lab, oklch, etc.) to hex
-const _colorCtx = typeof document !== 'undefined'
-  ? document.createElement('canvas').getContext('2d')
-  : null;
-
-const resolveColor = (color: string): string => {
-  if (!color || (!color.includes('lab(') && !color.includes('oklch(') && !color.includes('color('))) {
-    return color;
-  }
-  if (!_colorCtx) return '#000000';
-  try {
-    _colorCtx.fillStyle = '#000000';
-    _colorCtx.fillStyle = color;
-    return _colorCtx.fillStyle; // returns #rrggbb
-  } catch {
-    return '#000000';
-  }
-};
-
-const CSS_COLOR_PROPS = [
-  'color', 'background-color', 'border-color',
-  'border-top-color', 'border-bottom-color',
-  'border-left-color', 'border-right-color',
-];
-
-/**
- * Walk the original element tree, resolve lab()/oklch() colors via Canvas,
- * and apply as inline styles on corresponding cloned elements.
- */
-const fixColors = (original: Element, cloned: HTMLElement) => {
-  const cs = window.getComputedStyle(original);
-  for (const prop of CSS_COLOR_PROPS) {
-    const val = cs.getPropertyValue(prop);
-    if (val && (val.includes('lab(') || val.includes('oklch(') || val.includes('color('))) {
-      cloned.style.setProperty(prop, resolveColor(val));
-    }
-  }
-  const origChildren = original.children;
-  const clonedChildren = cloned.children;
-  for (let i = 0; i < origChildren.length && i < clonedChildren.length; i++) {
-    fixColors(origChildren[i], clonedChildren[i] as HTMLElement);
-  }
-};
-
 export function Share({ playlistId, userName, playlistIntro, suggestedIntro, addedSongs, bgImage, isViewing, onGoBack, onToast }: ShareProps) {
   const shareCardRef = useRef<HTMLDivElement>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -91,13 +47,6 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
         useCORS: true,
         scale: 2,
         backgroundColor: '#18181b',
-        onclone: (clonedDoc, clonedEl) => {
-          // Remove all stylesheets so html2canvas never parses lab()/oklch()
-          clonedDoc.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => el.remove());
-
-          // Apply resolved inline color styles to all cloned elements
-          if (card) fixColors(card, clonedEl);
-        },
       });
       return canvas.toDataURL('image/jpeg', 0.7);
     } finally {
