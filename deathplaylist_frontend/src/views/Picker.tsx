@@ -50,7 +50,7 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="relative z-10 flex flex-col h-screen max-w-2xl mx-auto bg-black/40 backdrop-blur-xl border-x border-white/5 overflow-hidden"
+      className="relative z-10 flex flex-col h-screen max-w-lg mx-auto bg-black/40 backdrop-blur-xl border-x border-white/5 overflow-hidden"
     >
       <header className="p-4 border-b border-white/10 flex items-center gap-3 sticky top-0 z-20 bg-black/40 backdrop-blur-md">
         <button

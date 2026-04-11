@@ -97,7 +97,7 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="relative z-10 flex flex-col h-screen max-w-2xl mx-auto bg-black overflow-hidden"
+      className="relative z-10 flex flex-col h-screen max-w-lg mx-auto bg-black overflow-hidden"
     >
       <header className="p-4 border-b border-white/10 flex items-center gap-3 sticky top-0 z-20 bg-black">
         <button
@@ -109,7 +109,7 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
         <h2 className="text-lg font-bold tracking-tight">朋友们的歌单</h2>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 pb-8">
         {loading ? (
           <div className="py-12 text-center text-white/30 text-sm">加载中...</div>
         ) : !hasMine && !hasOthers ? (
@@ -119,13 +119,13 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
             <span className="text-white/10">成为第一个创建死亡歌单的人吧</span>
           </div>
         ) : (
-          <>
+          <div className="space-y-6">
             {/* My playlist — pinned at top */}
             {myCard && <PlaylistCard fp={myCard} isMine />}
 
-            {/* Divider between mine and others */}
+            {/* Divider between mine and others — compact */}
             {hasMine && hasOthers && (
-              <div className="flex items-center gap-3 py-2">
+              <div className="flex items-center gap-3 -my-1.5">
                 <div className="flex-1 h-px bg-white/10" />
                 <span className="text-[10px] text-white/20 italic whitespace-nowrap">你也是自己的好朋友</span>
                 <div className="flex-1 h-px bg-white/10" />
@@ -136,7 +136,7 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
             {publicPlaylists.map((fp) => (
               <PlaylistCard key={fp.id} fp={fp} />
             ))}
-          </>
+          </div>
         )}
       </div>
     </motion.main>

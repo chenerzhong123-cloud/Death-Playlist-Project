@@ -248,7 +248,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="relative z-10 flex flex-col items-center h-screen max-w-2xl mx-auto bg-black overflow-y-auto pt-6 pb-24 px-4"
+        className="relative z-10 flex flex-col items-center h-screen max-w-lg mx-auto bg-black overflow-y-auto pt-6 pb-24 px-4"
       >
         {/* Share Card — visual preview matching miniprogram style */}
         <div

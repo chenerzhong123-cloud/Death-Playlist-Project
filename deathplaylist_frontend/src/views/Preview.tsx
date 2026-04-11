@@ -19,7 +19,7 @@ export function Preview({ userName, playlistIntro, suggestedIntro, addedSongs, o
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="relative z-10 flex flex-col h-screen max-w-2xl mx-auto bg-black/60 backdrop-blur-2xl overflow-hidden"
+      className="relative z-10 flex flex-col h-screen max-w-lg mx-auto bg-black/60 backdrop-blur-2xl overflow-hidden"
     >
       <div className="flex-1 overflow-y-auto px-8 pt-16 pb-32 space-y-8">
         <div className="text-center space-y-4">
