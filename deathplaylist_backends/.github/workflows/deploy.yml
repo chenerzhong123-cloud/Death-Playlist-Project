@@ -38,7 +38,7 @@ jobs:
             docker rm -f deathplaylist || true
             docker run -d \
               --name deathplaylist \
-              -p 80:80 \
+              -p 127.0.0.1:3000:80 \
               --restart=always \
               --env-file /root/deathplaylist_backends/.env \
               -v deathplaylist-data:/data \
@@ -46,5 +46,5 @@ jobs:
 
             # 健康检查
             sleep 5
-            curl -sf http://localhost/api/songs/search?q=test&limit=1 || exit 1
+            curl -sf http://127.0.0.1:3000/api/songs/search?q=test&limit=1 || exit 1
             echo "Deployment successful"

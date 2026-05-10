@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
@@ -15,7 +16,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const origins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',')
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://47.103.81.95'];
+    : ['http://localhost:3000', 'http://localhost:5173', 'https://www.deuce.monster'];
   app.enableCors({ origin: origins, credentials: true });
 
   const port = process.env.PORT || 80;

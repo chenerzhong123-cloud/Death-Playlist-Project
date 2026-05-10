@@ -68,11 +68,11 @@ See `.env.example`. Key vars:
 - `JWT_SECRET` — JWT signing secret
 - `DB_DATABASE` — SQLite file path (default `death_playlist.db`)
 - `WECHAT_APP_ID` / `WECHAT_APP_SECRET` — WeChat OAuth credentials (placeholder = mock mode)
-- `CORS_ORIGINS` — Comma-separated allowed origins（生产环境包含 `http://47.103.81.95`）
+- `CORS_ORIGINS` — Comma-separated allowed origins（生产环境包含 `https://www.deuce.monster`）
 
 ## Deployment
 
-Deployed on Alibaba Cloud (阿里云, IP: 47.103.81.95). Dockerfile uses `node:20-slim`, production port 80.
+Deployed on Alibaba Cloud (阿里云), domain `www.deuce.monster`. Dockerfile uses `node:20-slim`, production port 80.
 
 **前端静态文件由后端统一托管：**
 - `main.ts` 中 `app.useStaticAssets(join(__dirname, '..', 'static'))` 托管前端构建产物
