@@ -38,7 +38,7 @@ NestJS 11 + TypeORM + SQLite，微信云托管部署。
 
 - **AppID:** `wxd9305525bdda7423`
 - **云环境:** `prod-1gis5b1g29ea3aec`
-- **API 地址:** `http://47.103.81.95/api`（阿里云服务器，域名备案后替换）
+- **API 地址:** `https://www.deuce.monster/api`
 
 #### 小程序结构
 
@@ -93,7 +93,7 @@ miniprogram/
 
 ## Deployment Flow
 
-**后端 + H5 前端统一部署到阿里云服务器（47.103.81.95）：**
+**后端 + H5 前端统一部署到阿里云服务器，域名 `www.deuce.monster`：**
 
 ```bash
 # 1. 构建前端
@@ -111,17 +111,18 @@ npm run build
 # 4. 部署到阿里云（Docker 或直接运行）
 # Docker:
 docker build -t deathplaylist .
-docker run -d -p 80:80 -e CORS_ORIGINS=http://47.103.81.95 deathplaylist
+docker run -d -p 80:80 -e CORS_ORIGINS=https://www.deuce.monster deathplaylist
 # 或直接:
 # NODE_ENV=production PORT=80 node dist/main.js
 
 # 5. 小程序壳：在微信开发者工具中上传代码 → 提交审核
 ```
 
-**注意：** 域名备案完成后，将 `47.103.81.95` 替换为正式域名（涉及 3 处配置）：
-- `deathplaylist_frontend/src/App.tsx` → `API_BASE`
+**正式域名：** `www.deuce.monster`，已配置在以下位置：
+- `deathplaylist_frontend/src/App.tsx` → `API_BASE`（生产同源 `/api`）
 - `deathplaylist_miniprogram/utils/api.js` → `API_BASE`
 - `deathplaylist_backends/.env` → `CORS_ORIGINS`
+- `deathplaylist_backends/src/main.ts` → CORS 默认值
 
 ## API Endpoints (Backend)
 
