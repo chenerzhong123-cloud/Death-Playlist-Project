@@ -3,9 +3,19 @@
     <view class="icon-circle">
       <text class="icon-text">微</text>
     </view>
-    <text class="title">欢迎使用死亡歌单</text>
-    <text class="subtitle">登录后创建你的专属歌单</text>
-    <button class="btn-login" bindtap="onLogin">微信登录</button>
+    <text class="title">设置昵称</text>
+    <text class="subtitle">输入你的昵称开始使用</text>
+    <input
+      class="nickname-input"
+      value="{{nickname}}"
+      placeholder="输入昵称"
+      placeholder-class="nickname-placeholder"
+      maxlength="15"
+      bindinput="onInput"
+      confirm-type="done"
+      bindconfirm="onLogin"
+    />
+    <button class="btn-login" loading="{{loading}}" bindtap="onLogin">开始使用</button>
     <view class="privacy-hint">
       <text class="privacy-text">登录即表示同意</text>
       <text class="privacy-link" bindtap="goPrivacy">《隐私政策》</text>

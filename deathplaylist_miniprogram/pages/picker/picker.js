@@ -63,34 +63,6 @@ Page({
     })
   },
 
-  onSearchInput: function(e) {
-    var query = e.detail.value
-    this.setData({ searchQuery: query })
-    clearTimeout(this._searchTimer)
-    if (!query.trim()) {
-      this.loadRecs()
-      return
-    }
-    var self = this
-    this._searchTimer = setTimeout(function() { self.searchSongs(query) }, 400)
-  },
-
-  clearSearch: function() {
-    this.setData({ searchQuery: '', songs: [] })
-    this.loadRecs()
-  },
-
-  searchSongs: function(query) {
-    if (!query.trim()) return
-    var self = this
-    self.setData({ searchLoading: true })
-    api.request('/songs/search?q=' + encodeURIComponent(query) + '&limit=20').then(function(data) {
-      self.setData({ songs: data, searchLoading: false })
-    }).catch(function() {
-      self.setData({ songs: [], searchLoading: false })
-    })
-  },
-
   selectSong: function(e) {
     var index = e.currentTarget.dataset.index
     var song = this.data.songs[index]

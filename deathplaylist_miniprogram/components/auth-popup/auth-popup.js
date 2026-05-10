@@ -16,11 +16,7 @@ Component({
     },
 
     async onLogin() {
-      var nickname = this.data.nickname.trim()
-      if (!nickname) {
-        wx.showToast({ title: '请输入昵称', icon: 'none' })
-        return
-      }
+      var nickname = this.data.nickname.trim() || '微信用户'
       if (this.data.loading) return
       this.setData({ loading: true })
 

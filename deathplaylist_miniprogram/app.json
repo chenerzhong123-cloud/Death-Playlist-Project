@@ -3,8 +3,10 @@
     "pages/index/index",
     "pages/selection/selection",
     "pages/picker/picker",
+    "pages/preview/preview",
     "pages/share/share",
     "pages/friends/friends",
+    "pages/playlist-detail/playlist-detail",
     "pages/privacy/privacy"
   ],
   "lazyCodeLoading": "requiredComponents",

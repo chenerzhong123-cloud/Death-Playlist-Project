@@ -35,9 +35,10 @@ Page({
       let allPlaylists = data || []
 
       if (user && myPlaylistId && mySongs && mySongs.length > 0) {
+        const effectiveIntro = app.globalData.playlistIntro || app.globalData.suggestedIntro || '暂无简介'
         const myCard = {
           id: myPlaylistId,
-          intro: app.globalData.playlistIntro || '',
+          intro: effectiveIntro,
           user: { id: user.id, name: user.nickname, avatar: user.avatar },
           songs: mySongs,
           isMine: true,

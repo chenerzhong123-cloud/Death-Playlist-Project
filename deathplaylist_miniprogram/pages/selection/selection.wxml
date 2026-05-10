@@ -3,11 +3,7 @@
 <view class="page">
   <!-- Header -->
   <view class="header">
-    <text class="title">我的死亡歌单</text>
-    <view class="intro-display">
-      <text class="intro-text">{{suggestedIntro}}</text>
-      <text class="shuffle-icon" catchtap="shuffleIntro">🎲</text>
-    </view>
+    <text class="title">定制你的歌单</text>
   </view>
 
   <!-- Song Slots -->
@@ -41,7 +37,7 @@
 
   <!-- Bottom Bar -->
   <view class="bottom-bar">
-    <button class="btn-next {{addedSongs.length > 0 ? 'active' : ''}}" bindtap="onComplete">保存</button>
+    <button class="btn-next {{addedSongs.length > 0 ? 'active' : ''}}" bindtap="onComplete">完成</button>
   </view>
 
   <!-- Auth Popup -->

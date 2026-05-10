@@ -8,9 +8,13 @@ Page({
     hasPlaylist: false,
   },
 
-  onLoad() {
+  onLoad(options) {
     const info = wx.getWindowInfo()
     this.setData({ statusBarHeight: info.statusBarHeight })
+
+    if (options && options.playlistId) {
+      this.openSharedPlaylist(options.playlistId)
+    }
   },
 
   onShow() {
@@ -40,5 +44,14 @@ Page({
       title: '死亡歌单 — 选好你葬礼上要放的歌',
       path: '/pages/index/index',
     }
+  },
+
+  openSharedPlaylist(playlistId) {
+    request('/playlists/' + playlistId).then(function(playlist) {
+      app.globalData.sharedPlaylist = playlist
+      wx.navigateTo({ url: '/pages/playlist-detail/playlist-detail?id=' + playlistId })
+    }).catch(function() {
+      wx.showToast({ title: '歌单不存在或已删除', icon: 'none' })
+    })
   },
 })

@@ -1,30 +1,9 @@
 var app = getApp()
-var api = require('../../utils/api')
-
-var INTRO_SUGGESTIONS = [
-  '给你的人生，留最后一句话',
-  '如果这是你最后的BGM',
-  '葬礼上，我要放这首歌',
-  '离开时，请为我播放',
-  '闭上眼之前，听一首',
-  '我的告别，由我配乐',
-  '人生最后一首，我选好了',
-  '当我离去，音乐代替遗言',
-  '走的时候，别放哀乐',
-  '这是我最后的倔强',
-  '如果明天不再来',
-  '人生谢幕，歌单已定',
-  '让音乐替我说再见',
-  '世界最后的旋律，由我定',
-  '我选好了，你们播好',
-]
 
 Page({
   data: {
     addedSongs: [],
     showAuthPopup: false,
-    playlistIntro: '',
-    suggestedIntro: '',
     dragging: false,
     dragIdx: -1,
     startY: 0,
@@ -37,10 +16,8 @@ Page({
 
   onLoad: function() {
     var added = app.globalData.addedSongs || []
-    var suggested = app.globalData.suggestedIntro || ''
     this.setData({
       addedSongs: added,
-      suggestedIntro: suggested,
     })
   },
 
@@ -59,15 +36,6 @@ Page({
 
     app.globalData.addedSongs = addedSongs
     this.setData({ addedSongs: addedSongs })
-  },
-
-  shuffleIntro: function() {
-    var current = this.data.suggestedIntro
-    var pool = INTRO_SUGGESTIONS.filter(function(s) { return s !== current })
-    if (pool.length === 0) pool = INTRO_SUGGESTIONS
-    var pick = pool[Math.floor(Math.random() * pool.length)]
-    this.setData({ suggestedIntro: pick })
-    app.globalData.suggestedIntro = pick
   },
 
   onSlotTap: function() {
@@ -193,51 +161,10 @@ Page({
     }
     if (!app.globalData.user) {
       this.setData({ showAuthPopup: true })
-      this._pendingAction = this.doSave.bind(this)
+      this._pendingAction = function() { wx.navigateTo({ url: '/pages/preview/preview' }) }
       return
     }
-    this.doSave()
-  },
-
-  doSave: function() {
-    var songs = this.data.addedSongs
-    var intro = this.data.playlistIntro || this.data.suggestedIntro || ''
-    var songsPayload = []
-    for (var i = 0; i < songs.length; i++) {
-      songsPayload.push({
-        externalId: songs[i].externalId || songs[i].id,
-        title: songs[i].title,
-        artist: songs[i].artist,
-        albumArt: songs[i].albumArt,
-      })
-    }
-
-    var playlistId = app.globalData.myPlaylistId
-    if (playlistId) {
-      api.request('/playlists/' + playlistId, {
-        method: 'PUT',
-        data: { intro: intro, songs: songsPayload },
-      }).then(function(updated) {
-        app.globalData.myPlaylistId = updated.id
-        app.globalData.addedSongs = songs
-        app.globalData.playlistIntro = intro
-        wx.navigateTo({ url: '/pages/share/share' })
-      }).catch(function() {
-        wx.showToast({ title: '保存失败，请重试', icon: 'none' })
-      })
-    } else {
-      api.request('/playlists', {
-        method: 'POST',
-        data: { intro: intro, songs: songsPayload },
-      }).then(function(created) {
-        app.globalData.myPlaylistId = created.id
-        app.globalData.addedSongs = songs
-        app.globalData.playlistIntro = intro
-        wx.navigateTo({ url: '/pages/share/share' })
-      }).catch(function() {
-        wx.showToast({ title: '保存失败，请重试', icon: 'none' })
-      })
-    }
+    wx.navigateTo({ url: '/pages/preview/preview' })
   },
 
   onLogin: function() {

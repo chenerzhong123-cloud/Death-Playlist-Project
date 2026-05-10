@@ -7,8 +7,8 @@
     </view>
 
     <text class="title">死亡歌单</text>
-    <text class="subtitle">哀乐和唢呐太千篇一律？</text>
-    <text class="subtitle">来定义自己生命的最后乐章</text>
+    <text class="subtitle">不想自己的葬礼还在吹唢呐放哀乐？</text>
+    <text class="subtitle">选择你的葬礼上播放的音乐吧</text>
 
     <view class="buttons">
       <button class="btn-primary" bindtap="goToSelection">{{hasPlaylist ? '我的歌单' : '新的歌单'}}</button>
