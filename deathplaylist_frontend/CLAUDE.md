@@ -116,6 +116,6 @@ cp -r dist ../deathplaylist_backends/static
 
 **架构：** 前端构建产物放在后端 `static/` 目录，NestJS 通过 `app.useStaticAssets()` 托管。`/api` 走后端接口，`/` 走前端页面。用户通过微信云托管域名访问。
 
-**Vercel 已弃用**（中国大陆无法稳定访问）。后端和前端统一部署到阿里云服务器（47.103.81.95）。
+**Vercel 已弃用**（中国大陆无法稳定访问）。后端和前端统一部署到阿里云服务器，域名 `www.deuce.monster`。
 
 **部署变更需要重新部署后端**，前端不会独立生效。

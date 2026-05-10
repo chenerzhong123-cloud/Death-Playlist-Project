@@ -1,4 +1,8 @@
-export const API_BASE = 'http://47.103.81.95/api';
+export const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3001/api'
+    : '/api');
 
 export async function apiFetch(path: string, options?: RequestInit) {
   const token = localStorage.getItem('jwt');

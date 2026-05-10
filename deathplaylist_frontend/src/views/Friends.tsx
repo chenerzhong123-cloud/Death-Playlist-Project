@@ -18,7 +18,7 @@ function getDisplayName(fallback: string): string {
   return surname ? `${surname}${gender || '先生'}` : fallback;
 }
 
-function PlaylistCard({ fp, isMine }: { fp: PublicPlaylist; isMine?: boolean }) {
+function PlaylistCard({ fp, isMine }: { fp: PublicPlaylist; isMine?: boolean; key?: string }) {
   const intro = fp.intro || '暂无简介';
   const truncatedIntro = intro.length > 24 ? intro.slice(0, 24) + '...' : intro;
 
@@ -84,8 +84,9 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
 
   const displayName = getDisplayName(user?.nickname || '用户');
 
+  const effectiveIntro = playlistIntro || '暂无简介';
   const myCard: PublicPlaylist | null = user && myPlaylistId && addedSongs.length > 0
-    ? { id: myPlaylistId, intro: playlistIntro, user: { id: user.id, name: displayName, avatar: user.avatar }, songs: addedSongs }
+    ? { id: myPlaylistId, intro: effectiveIntro, user: { id: user.id, name: displayName, avatar: user.avatar }, songs: addedSongs }
     : null;
 
   const hasMine = !!myCard;
