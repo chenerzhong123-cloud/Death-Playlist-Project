@@ -20,6 +20,7 @@ jobs:
 
             # 拉取前端最新代码并构建
             cd /root/deathplaylist_frontend
+            git checkout -- . 2>/dev/null || true
             git pull origin main
             npm install --prefer-offline
             npm run build
