@@ -1,0 +1,63 @@
+<wxs src="../../utils/helper.wxs" module="helper" />
+
+<view class="page">
+  <scroll-view class="content" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- Header -->
+    <view class="header">
+      <text class="title">{{userName}}的死亡歌单</text>
+      <view wx:if="{{isEditingIntro}}" class="intro-edit">
+        <input
+          class="intro-input"
+          maxlength="{{30}}"
+          value="{{playlistIntro}}"
+          bindinput="onIntroInput"
+          bindblur="finishEditIntro"
+          bindconfirm="finishEditIntro"
+          focus="{{true}}"
+        />
+      </view>
+      <view wx:else class="intro-display" bindtap="startEditIntro">
+        <text class="intro-text">{{playlistIntro || suggestedIntro}}</text>
+        <text class="edit-icon">✎</text>
+      </view>
+    </view>
+
+    <!-- Song List -->
+    <view class="list-hint">
+      <text class="hint-text">按住 ≡ 拖动排序</text>
+    </view>
+
+    <view class="song-list">
+      <view
+        wx:for="{{songs}}"
+        wx:key="id"
+        class="song-item {{dragging && dragIndex === index ? 'song-item-dragging' : ''}}"
+        style="{{dragging && dragIndex === index ? 'transform:translateY(' + dragTranslateY + 'px);z-index:10' : ''}}"
+      >
+        <view
+          class="drag-handle"
+          catchtouchstart="onDragStart"
+          catchtouchmove="onDragMove"
+          catchtouchend="onDragEnd"
+          data-index="{{index}}"
+        >
+          <text class="drag-icon">⠿</text>
+        </view>
+        <image src="{{item.albumArt}}" class="album-art" mode="aspectFill" lazy-load />
+        <view class="song-info">
+          <text class="song-title">{{item.title}}</text>
+          <text class="song-artist">{{item.artist}}</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- Footer -->
+  <view class="footer">
+    <button class="btn-back" bindtap="goBack">上一步</button>
+    <button class="btn-share" bindtap="onSaveAndShare">分享预览</button>
+  </view>
+
+  <!-- Auth Popup -->
+  <auth-popup wx:if="{{showAuthPopup}}" show="{{showAuthPopup}}" bind:login="onLogin" bind:close="onCloseAuth" />
+</view>

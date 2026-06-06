@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "预览",
+  "usingComponents": {
+    "auth-popup": "/components/auth-popup/auth-popup"
+  }
+}

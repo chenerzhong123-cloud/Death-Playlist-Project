@@ -1,0 +1,69 @@
+<view class="page">
+  <scroll-view class="content" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- Loading -->
+    <view wx:if="{{loading}}" class="loading-text">加载中...</view>
+
+    <!-- Guest mode: demo card + login CTA -->
+    <block wx:elif="{{isGuest}}">
+      <view class="playlist-card">
+        <view class="card-header">
+          <view class="demo-avatar">
+            <text>D</text>
+          </view>
+          <view class="card-user-info">
+            <text class="card-user-name">示例用户的死亡歌单</text>
+            <text class="card-intro">"最后一程，听点自己喜欢的。"</text>
+          </view>
+        </view>
+        <view class="card-songs">
+          <view class="demo-song" wx:for="{{demoSongs}}" wx:key="title">
+            <view class="demo-album-art" style="background: {{item.color}};"></view>
+            <view class="demo-song-info">
+              <text class="demo-song-title">{{item.title}}</text>
+              <text class="demo-song-artist">{{item.artist}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="login-cta">
+        <text class="cta-text">登录后查看更多朋友的歌单</text>
+        <button class="cta-btn" bindtap="loginAndLoad">登录查看更多</button>
+      </view>
+    </block>
+
+    <!-- Logged in: real playlists -->
+    <block wx:elif="{{playlists.length > 0}}">
+      <view class="playlist-card" wx:for="{{playlists}}" wx:key="id">
+        <view class="card-header">
+          <image src="{{item.user.avatar}}" class="card-avatar" mode="aspectFill" />
+          <view class="card-user-info">
+            <view class="name-row">
+              <text class="card-user-name">{{item.user.name}}的死亡歌单</text>
+              <text wx:if="{{item.isMine}}" class="mine-badge">(我)</text>
+            </view>
+            <text class="card-intro">"{{item.intro || '定义自己生命的最后乐章'}}"</text>
+          </view>
+        </view>
+        <view class="card-songs">
+          <view class="song-row" wx:for="{{item.songs}}" wx:for-item="song" wx:key="id">
+            <image src="{{song.albumArt}}" class="song-album-art" mode="aspectFill" lazy-load />
+            <view class="song-info">
+              <text class="song-title">{{song.title}}</text>
+              <text class="song-artist">{{song.artist}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- Empty state -->
+    <view wx:else class="empty-state">
+      <text class="empty-text">还没有朋友的歌单</text>
+      <text class="empty-hint">分享你的歌单给朋友，让他们也创建一份吧</text>
+    </view>
+  </scroll-view>
+
+  <!-- Auth Popup -->
+  <auth-popup wx:if="{{showAuthPopup}}" show="{{showAuthPopup}}" bind:login="onLogin" bind:close="onCloseAuth" />
+</view>

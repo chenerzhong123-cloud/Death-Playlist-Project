@@ -1,0 +1,18 @@
+<view class="landing" style="padding-top: {{statusBarHeight}}px;">
+  <view class="landing-bg"></view>
+  <view class="light-beam"></view>
+  <view class="landing-content">
+    <view class="icon-circle">
+      <image class="logo-img" src="/images/logo_wireframe_hard.png" mode="aspectFit" />
+    </view>
+
+    <text class="title">死亡歌单</text>
+    <text class="subtitle">不想自己的葬礼还在吹唢呐放哀乐？</text>
+    <text class="subtitle">选择你的葬礼上播放的音乐吧</text>
+
+    <view class="buttons">
+      <button class="btn-primary" bindtap="goToSelection">{{hasPlaylist ? '我的歌单' : '新的歌单'}}</button>
+      <button class="btn-secondary" bindtap="goToFriends">看朋友们的歌单</button>
+    </view>
+  </view>
+</view>

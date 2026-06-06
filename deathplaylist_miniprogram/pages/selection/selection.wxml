@@ -1,0 +1,45 @@
+<wxs src="../../utils/helper.wxs" module="helper" />
+
+<view class="page">
+  <!-- Header -->
+  <view class="header">
+    <text class="title">定制你的歌单</text>
+  </view>
+
+  <!-- Song Slots -->
+  <scroll-view class="slot-list" scroll-y="{{!dragging}}" enhanced show-scrollbar="{{false}}">
+    <!-- Filled slots -->
+    <view wx:for="{{addedSongs}}" wx:key="id" class="song-slot filled {{dragging && index === dragIdx ? 'dragging-item' : ''}}" style="{{dragging && index === dragIdx ? dragStyle : (itemStyles[index] || '')}}" bindtouchstart="onDragStart" bindtouchmove="onDragMove" bindtouchend="onDragEnd" data-index="{{index}}">
+      <image src="{{item.albumArt}}" class="slot-art" mode="aspectFill" />
+      <view class="slot-info">
+        <text class="slot-title">{{item.title}}</text>
+        <text class="slot-artist">{{item.artist}}</text>
+      </view>
+      <view class="slot-grip">
+        <text class="grip-icon">⠿</text>
+      </view>
+      <view class="slot-remove" catchtap="removeSong" data-index="{{index}}">
+        <text class="remove-icon">✕</text>
+      </view>
+    </view>
+
+    <!-- Single empty slot -->
+    <view wx:if="{{addedSongs.length < 9}}" class="song-slot empty" bindtap="onSlotTap" data-index="{{addedSongs.length}}">
+      <view class="slot-empty-icon">+</view>
+      <text class="slot-hint">选一首歌</text>
+    </view>
+
+    <!-- Max hint -->
+    <view wx:if="{{addedSongs.length >= 9}}" class="max-hint">
+      <text class="max-hint-text">最多添加9首歌曲</text>
+    </view>
+  </scroll-view>
+
+  <!-- Bottom Bar -->
+  <view class="bottom-bar">
+    <button class="btn-next {{addedSongs.length > 0 ? 'active' : ''}}" bindtap="onComplete">完成</button>
+  </view>
+
+  <!-- Auth Popup -->
+  <auth-popup wx:if="{{showAuthPopup}}" show="{{showAuthPopup}}" bind:login="onLogin" bind:close="onCloseAuth" />
+</view>

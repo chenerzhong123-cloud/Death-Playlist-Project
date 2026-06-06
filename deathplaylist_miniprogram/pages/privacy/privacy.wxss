@@ -1,0 +1,43 @@
+.page {
+  min-height: 100vh;
+  background: #000;
+  padding: 32rpx;
+  box-sizing: border-box;
+}
+
+rich-text {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 26rpx;
+  line-height: 1.8;
+}
+
+/* Style rich-text content */
+rich-text h1,
+rich-text h2,
+rich-text h3 {
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: bold;
+  margin: 40rpx 0 16rpx;
+}
+
+rich-text h2:first-child {
+  margin-top: 0;
+}
+
+rich-text p {
+  margin: 12rpx 0;
+}
+
+rich-text ul {
+  padding-left: 32rpx;
+  margin: 12rpx 0;
+}
+
+rich-text li {
+  margin: 8rpx 0;
+}
+
+rich-text strong {
+  color: #fff;
+}
