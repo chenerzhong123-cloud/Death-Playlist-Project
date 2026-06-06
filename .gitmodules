@@ -1,9 +1,0 @@
-[submodule "deathplaylist_frontend"]
-	path = deathplaylist_frontend
-	url = https://github.com/chenerzhong123-cloud/Death-Playlist.git
-[submodule "deathplaylist_backends"]
-	path = deathplaylist_backends
-	url = https://github.com/chenerzhong123-cloud/Death-Playlist-backends.git
-[submodule "deathplaylist_miniprogram"]
-	path = deathplaylist_miniprogram
-	url = https://github.com/chenerzhong123-cloud/Death-Playlist-miniprogram.git
