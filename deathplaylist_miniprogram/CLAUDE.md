@@ -1,11 +1,11 @@
 # CLAUDE.md — 死亡歌单 (Death Playlist)
 
-> **⚠️ 本项目包含三个独立代码仓库，修改前务必确认路径正确：**
-> - 前端（H5）：`/Users/deuce.chen/deathplaylist/deathplaylist_frontend`
-> - 后端（NestJS API）：`/Users/deuce.chen/deathplaylist/deathplaylist_backends`
-> - 微信小程序壳：`/Users/deuce.chen/deathplaylist/deathplaylist_miniprogram`
+> **⚠️ 本项目已经合并为一个 monorepo，修改前务必确认子目录正确：**
+> - 前端（H5）：`/Users/deuce/claudeproject/deathplaylist/deathplaylist_frontend`
+> - 后端（NestJS API）：`/Users/deuce/claudeproject/deathplaylist/deathplaylist_backends`
+> - 微信小程序壳：`/Users/deuce/claudeproject/deathplaylist/deathplaylist_miniprogram`
 >
-> **不要找错路径修改代码。**
+> **不要找错子目录修改代码。**
 
 ## Project Overview
 
@@ -97,7 +97,7 @@ miniprogram/
 
 ```bash
 # 1. 构建前端
-cd /Users/deuce.chen/deathplaylist/deathplaylist_frontend
+cd /Users/deuce/claudeproject/deathplaylist/deathplaylist_frontend
 npm run build
 
 # 2. 复制到后端 static/
@@ -111,7 +111,7 @@ npm run build
 # 4. 部署到阿里云（Docker 或直接运行）
 # Docker:
 docker build -t deathplaylist .
-docker run -d -p 80:80 -e CORS_ORIGINS=https://www.deuce.monster deathplaylist
+docker run -d -p 127.0.0.1:3000:3000 -e CORS_ORIGINS=https://www.deuce.monster deathplaylist
 # 或直接:
 # NODE_ENV=production PORT=80 node dist/main.js
 

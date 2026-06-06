@@ -2,18 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **⚠️ 重要提醒：本项目包含前端 + 后端，有两个独立的代码仓库路径。**
-> - 后端（本项目）：`/Users/deuce.chen/deathplaylist/deathplaylist_backends`
-> - 前端：`/Users/deuce.chen/deathplaylist/deathplaylist_frontend`
-> - 小程序壳：`/Users/deuce.chen/deathplaylist/deathplaylist_miniprogram`
+> **⚠️ 重要提醒：本项目是 monorepo，前端、后端、小程序在同一仓库的不同子目录。**
+> - 后端（本项目）：`/Users/deuce/claudeproject/deathplaylist/deathplaylist_backends`
+> - 前端：`/Users/deuce/claudeproject/deathplaylist/deathplaylist_frontend`
+> - 小程序壳：`/Users/deuce/claudeproject/deathplaylist/deathplaylist_miniprogram`
 >
-> **请务必确认你要修改的代码在正确的路径下，不要找错地方修改代码。**
+> **请务必确认你要修改的代码在正确的子目录下，不要找错地方修改代码。**
 
 ## Project Overview
 
 **死亡歌单 Backend** — NestJS API server for the Death Playlist app. Provides WeChat auth (jscode2session + JWT), song search via iTunes Search API, playlist CRUD (one per user), friend relationships, and share link generation.
 
-This is the **backend** repo.
+This is the **backend** subproject inside the monorepo.
 
 ## Commands
 
@@ -83,7 +83,7 @@ Deployed on Alibaba Cloud (阿里云), domain `www.deuce.monster`. Dockerfile us
 **完整部署流程：**
 ```bash
 # 1. 构建前端
-cd /Users/deuce.chen/deathplaylist/deathplaylist_frontend
+cd /Users/deuce/claudeproject/deathplaylist/deathplaylist_frontend
 npm run build
 
 # 2. 复制到后端 static/
@@ -97,14 +97,14 @@ npm run build
 # 4. 部署到阿里云
 # Docker:
 docker build -t deathplaylist .
-docker run -d -p 80:80 -e CORS_ORIGINS=http://47.103.81.95 deathplaylist
+docker run -d -p 127.0.0.1:3000:3000 -e CORS_ORIGINS=http://47.103.81.95 deathplaylist
 ```
 
 **Important:** 域名备案完成后替换 `47.103.81.95` 为正式域名。
 
 ## 工作流程
 
-每次修改后端代码后，必须提交并推送到 GitHub：
+每次修改后端代码后，必须在 monorepo 根目录提交并推送到 GitHub：
 ```bash
 git add -A && git commit -m "描述" && git push
 ```
@@ -124,10 +124,10 @@ git add -A && git commit -m "描述" && git push
 ### 检查部署状态
 ```bash
 # 查看最近工作流运行
-gh run list -R chenerzhong123-cloud/Death-Playlist-backends --limit 3
+gh run list -R chenerzhong123-cloud/Death-Playlist-Project --limit 3
 
 # 查看某次运行日志（失败时排查用）
-gh run view <run-id> -R chenerzhong123-cloud/Death-Playlist-backends --log
+gh run view <run-id> -R chenerzhong123-cloud/Death-Playlist-Project --log
 ```
 
 ### 服务器访问（已配置 SSH 别名 `aliyun`）
@@ -142,13 +142,13 @@ ssh aliyun "docker logs deathplaylist --tail 50"
 ssh aliyun "df -h / && free -h"
 
 # 在服务器上手动拉取并重建
-ssh aliyun "cd /root/deathplaylist_backends && git pull origin main && cd /root/deathplaylist_frontend && git pull origin main && npm install --prefer-offline && npm run build && rm -rf /root/deathplaylist_backends/static && cp -r dist /root/deathplaylist_backends/static && cd /root/deathplaylist_backends && docker build -t deathplaylist . && docker stop deathplaylist; docker rm deathplaylist; docker run -d --name deathplaylist -p 80:80 --restart=always --env-file /root/deathplaylist_backends/.env -v deathplaylist-data:/data deathplaylist"
+ssh aliyun "cd /root/deathplaylist && git pull origin main && cd deathplaylist_frontend && npm install --prefer-offline && npm run build && rm -rf ../deathplaylist_backends/static && cp -r dist ../deathplaylist_backends/static && cd ../deathplaylist_backends && docker build -t deathplaylist . && docker stop deathplaylist; docker rm deathplaylist; docker run -d --name deathplaylist -p 127.0.0.1:3000:3000 --restart=always --env-file /root/deathplaylist/deathplaylist_backends/.env -v deathplaylist-data:/data deathplaylist"
 ```
 
 ### 部署失败排查 Playbook
 1. **GitHub Actions 日志**：`gh run view <id> --log` 查看 SSH 连接或构建错误
 2. **服务器容器状态**：`ssh aliyun "docker ps -a"` 确认容器是否在运行
 3. **容器日志**：`ssh aliyun "docker logs deathplaylist --tail 50"` 查看应用错误
-4. **代码同步**：`ssh aliyun "cd /root/deathplaylist_backends && git log --oneline -3"` 确认代码版本
+4. **代码同步**：`ssh aliyun "cd /root/deathplaylist && git log --oneline -3"` 确认代码版本
 5. **磁盘空间**：`ssh aliyun "df -h"` 空间不足会导致构建失败
-6. **环境配置**：`ssh aliyun "cat /root/deathplaylist_backends/.env"` 确认生产环境变量
+6. **环境配置**：`ssh aliyun "cat /root/deathplaylist/deathplaylist_backends/.env"` 确认生产环境变量

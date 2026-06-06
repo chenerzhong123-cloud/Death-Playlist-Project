@@ -2,12 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **⚠️ 重要提醒：本项目包含前端 + 后端，有两个独立的代码仓库路径。**
-> - 前端（本项目）：`/Users/deuce.chen/deathplaylist/deathplaylist_frontend`
-> - 后端：`/Users/deuce.chen/deathplaylist/deathplaylist_backends`
-> - 小程序壳：`/Users/deuce.chen/deathplaylist/deathplaylist_miniprogram`
+> **⚠️ 重要提醒：本项目是 monorepo，前端、后端、小程序在同一仓库的不同子目录。**
+> - 前端（本项目）：`/Users/deuce/claudeproject/deathplaylist/deathplaylist_frontend`
+> - 后端：`/Users/deuce/claudeproject/deathplaylist/deathplaylist_backends`
+> - 小程序壳：`/Users/deuce/claudeproject/deathplaylist/deathplaylist_miniprogram`
 >
-> **请务必确认你要修改的代码在正确的路径下，不要找错地方修改代码。**
+> **请务必确认你要修改的代码在正确的子目录下，不要找错地方修改代码。**
 
 ## Project Overview
 
@@ -104,7 +104,7 @@ Single-page React 19 app. View navigation via `view` state machine: `'landing' |
 
 ```bash
 # 1. 构建前端
-cd /Users/deuce.chen/deathplaylist/deathplaylist_frontend
+cd /Users/deuce/claudeproject/deathplaylist/deathplaylist_frontend
 npm run build
 
 # 2. 复制到后端 static/ 目录

@@ -7,6 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Playlist } from '../playlists/playlist.entity';
+import { Friendship } from '../friends/friendship.entity';
 
 @Entity('users')
 export class User {
@@ -30,6 +31,9 @@ export class User {
 
   @OneToMany(() => Playlist, (playlist) => playlist.user)
   playlists: Playlist[];
+
+  @OneToMany(() => Friendship, (friendship) => friendship.user)
+  friendships: Friendship[];
 
   @CreateDateColumn()
   createdAt: Date;
