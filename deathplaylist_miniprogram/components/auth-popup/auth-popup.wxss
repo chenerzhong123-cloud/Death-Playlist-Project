@@ -1,0 +1,111 @@
+.overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.popup {
+  background: #18181b;
+  border: 1rpx solid rgba(255,255,255,0.1);
+  border-radius: 64rpx;
+  padding: 64rpx 48rpx;
+  width: 560rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.icon-circle {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: #07C160;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32rpx;
+}
+
+.icon-text {
+  color: #fff;
+  font-size: 40rpx;
+  font-weight: bold;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 12rpx;
+}
+
+.subtitle {
+  font-size: 24rpx;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 40rpx;
+}
+
+.nickname-input {
+  width: 100%;
+  background: rgba(255,255,255,0.1);
+  border: 1rpx solid rgba(255,255,255,0.2);
+  border-radius: 24rpx;
+  padding: 24rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #fff;
+  margin-bottom: 32rpx;
+  box-sizing: border-box;
+}
+
+.nickname-placeholder {
+  color: rgba(255,255,255,0.3);
+}
+
+.btn-login {
+  width: 100%;
+  background: #07C160;
+  color: #fff;
+  border-radius: 32rpx;
+  padding: 28rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+  line-height: 1;
+}
+
+.btn-login::after { border: none; }
+
+.privacy-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20rpx;
+}
+
+.privacy-text {
+  font-size: 22rpx;
+  color: rgba(255,255,255,0.3);
+}
+
+.privacy-link {
+  font-size: 22rpx;
+  color: #07C160;
+}
+
+.btn-skip {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.4);
+  border-radius: 32rpx;
+  padding: 24rpx;
+  font-size: 28rpx;
+  margin-top: 20rpx;
+  border: none;
+  line-height: 1;
+}
+
+.btn-skip::after { border: none; }

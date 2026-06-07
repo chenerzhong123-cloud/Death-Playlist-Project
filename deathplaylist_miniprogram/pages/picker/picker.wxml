@@ -1,0 +1,48 @@
+<wxs src="../../utils/helper.wxs" module="helper" />
+
+<view class="page">
+  <!-- Search Bar (full width) -->
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <input
+        class="search-input"
+        placeholder="搜索歌曲、歌手"
+        placeholder-class="search-placeholder"
+        value="{{searchQuery}}"
+        bindinput="onSearchInput"
+        confirm-type="search"
+        focus="{{autoFocus}}"
+        style="padding-right: {{searchQuery ? '64rpx' : '32rpx'}}"
+      />
+      <view wx:if="{{searchQuery}}" class="clear-btn" catchtap="clearSearch">✕</view>
+    </view>
+  </view>
+
+  <!-- Song List -->
+  <scroll-view class="song-list" scroll-y enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{!searchQuery}}" class="section-header">
+      <text class="section-title">推荐歌曲</text>
+    </view>
+
+    <view wx:if="{{searchLoading}}" class="empty-text">搜索中...</view>
+    <view wx:elif="{{songs.length === 0 && searchQuery}}" class="empty-text">未找到相关歌曲</view>
+
+    <view
+      wx:for="{{songs}}"
+      wx:key="id"
+      class="song-item {{helper.isAdded(item.id, addedSongs) ? 'song-added' : ''}}"
+      hover-class="song-item-hover"
+      bindtap="selectSong"
+      data-index="{{index}}"
+    >
+      <image src="{{item.albumArt}}" class="album-art" mode="aspectFill" lazy-load />
+      <view class="song-info">
+        <text class="song-title">{{item.title}}</text>
+        <text class="song-artist">{{item.artist}}</text>
+      </view>
+      <view class="action-btn {{helper.isAdded(item.id, addedSongs) ? 'btn-added' : ''}}" catchtap="toggleSong" data-index="{{index}}">
+        <text>{{helper.isAdded(item.id, addedSongs) ? '✓' : '+'}}</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>

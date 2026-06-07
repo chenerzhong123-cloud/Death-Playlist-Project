@@ -1,0 +1,25 @@
+<view class="overlay" wx:if="{{show}}" catchtap="onClose" catchtouchmove="noop">
+  <view class="popup" catchtap="noop" catchtouchmove="noop">
+    <view class="icon-circle">
+      <text class="icon-text">微</text>
+    </view>
+    <text class="title">设置昵称</text>
+    <text class="subtitle">输入你的昵称开始使用</text>
+    <input
+      class="nickname-input"
+      value="{{nickname}}"
+      placeholder="输入昵称"
+      placeholder-class="nickname-placeholder"
+      maxlength="15"
+      bindinput="onInput"
+      confirm-type="done"
+      bindconfirm="onLogin"
+    />
+    <button class="btn-login" loading="{{loading}}" bindtap="onLogin">开始使用</button>
+    <view class="privacy-hint">
+      <text class="privacy-text">登录即表示同意</text>
+      <text class="privacy-link" bindtap="goPrivacy">《隐私政策》</text>
+    </view>
+    <button class="btn-skip" bindtap="onClose">暂不登录</button>
+  </view>
+</view>

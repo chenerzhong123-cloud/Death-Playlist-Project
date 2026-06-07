@@ -1,0 +1,27 @@
+<view class="page">
+  <!-- Hidden Canvas for Share Card -->
+  <canvas type="2d" id="shareCanvas" class="share-canvas"></canvas>
+
+  <!-- Preview of share card image -->
+  <scroll-view class="content" scroll-y>
+    <view class="card-preview">
+      <view wx:if="{{shareImagePath}}" class="card-wrap" bindlongpress="saveToAlbum">
+        <image
+          src="{{shareImagePath}}"
+          mode="widthFix"
+          class="card-image"
+        />
+      </view>
+      <view wx:else class="card-loading">生成分享卡片中...</view>
+    </view>
+
+    <!-- Share Actions -->
+    <view class="actions">
+      <view class="action-row">
+        <button class="action-btn" bindtap="saveToAlbum">保存到相册</button>
+        <button class="action-btn" open-type="share">分享转发</button>
+      </view>
+      <button class="btn-back-link" bindtap="goBack">返回预览</button>
+    </view>
+  </scroll-view>
+</view>
