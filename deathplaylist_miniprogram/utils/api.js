@@ -1,6 +1,6 @@
 // Production: use same-origin /api via the official domain
 // Set USE_CALL_CONTAINER=true and fill CLOUD_ENV for wx.cloud.callContainer mode
-const API_BASE = 'https://www.deuce.monster/api'
+const API_BASE = 'https://www.deuce.monster/deathplaylist/api'
 const USE_CALL_CONTAINER = false
 const CLOUD_ENV = 'prod-1gis5b1g29ea3aec'
 const SERVICE_NAME = 'express-19oq'
