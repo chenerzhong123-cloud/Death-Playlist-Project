@@ -186,7 +186,7 @@ function truncateText(ctx: CanvasRenderingContext2D, text: string, maxWidth: num
 export function Share({ playlistId, userName, playlistIntro, suggestedIntro, addedSongs, isViewing, onGoBack, onToast }: ShareProps) {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
-  const shareUrl = `https://www.deuce.monster/?playlist=${playlistId}`;
+  const shareUrl = `https://www.deuce.monster/deathplaylist/?playlist=${playlistId}`;
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareUrl)}`;
 
   const saveImage = async () => {
