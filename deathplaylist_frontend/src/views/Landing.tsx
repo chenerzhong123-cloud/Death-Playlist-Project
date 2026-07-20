@@ -53,7 +53,7 @@ export function Landing({ hasPlaylist, onNewPlaylist, onFriends }: LandingProps)
             className="flex justify-center mb-4"
           >
             <img
-              src="/logo.png"
+              src={`${import.meta.env.BASE_URL}logo.png`}
               alt="死亡歌单"
               className="w-24 h-24 rounded-full border border-white/20"
             />
