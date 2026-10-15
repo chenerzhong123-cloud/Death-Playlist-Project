@@ -53,6 +53,24 @@ jobs:
             npm ci --prefer-offline
             npm run build
             docker build -t deathplaylist .
+            # Rehearse startup against an in-memory database before touching the live container.
+            docker run --rm --env-file "$REPO/deathplaylist_backends/.env" \
+              -e DB_DATABASE=:memory: --entrypoint node deathplaylist -e '
+              (async () => {
+                for (const dependency of ["jest", "ts-jest", "@nestjs/cli"]) {
+                  let installed = false;
+                  try { require.resolve(dependency); installed = true; } catch {}
+                  if (installed) throw new Error("Development dependency in runtime image: " + dependency);
+                }
+                const { NestFactory } = require("@nestjs/core");
+                const { AppModule } = require("./dist/app.module");
+                const { configureApp } = require("./dist/setup");
+                const app = await NestFactory.create(AppModule, { logger: false });
+                configureApp(app);
+                await app.init();
+                await app.close();
+                console.log("Runtime image startup and production dependency check passed");
+              })().catch(() => { console.error("Runtime image check failed"); process.exit(1); });'
             docker rm -f deathplaylist || true
             docker run -d \
               --name deathplaylist \
