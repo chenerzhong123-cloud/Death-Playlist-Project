@@ -1,3 +1,4 @@
+import { jwtSecret } from './jwt.config';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -11,7 +12,7 @@ import { UsersModule } from '../users/users.module';
     UsersModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'death-playlist-jwt-secret',
+      secret: jwtSecret(),
       signOptions: { expiresIn: '7d' },
     }),
   ],

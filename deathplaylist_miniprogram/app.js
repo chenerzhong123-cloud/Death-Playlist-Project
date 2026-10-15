@@ -25,6 +25,7 @@ App({
     addedSongs: [],
     playlistIntro: '',
     myPlaylistId: null,
+    playlistDirty: false,
     suggestedIntro: '',
   },
 
@@ -43,6 +44,11 @@ App({
     }
   },
 
+  onShow(options) {
+    const query = options && options.query
+    if (query && (query.playlistId || query.scene)) this.globalData.sharedEntry = query
+  },
+
   async autoLogin() {
     try {
       const user = await tryAutoLogin()
@@ -53,12 +59,14 @@ App({
     } catch {}
   },
 
-  async loadMyPlaylist() {
+  async loadMyPlaylist(preserveDraft = false) {
+    const draft = this.globalData.addedSongs
     try {
       const playlists = await request('/playlists/me')
       if (playlists && playlists.length > 0) {
         const p = playlists[0]
         this.globalData.myPlaylistId = p.id
+        if (this.globalData.playlistDirty || (preserveDraft && draft.length)) return
         this.globalData.playlistIntro = p.intro || ''
         this.globalData.addedSongs = (p.songs || []).map(s => ({
           id: s.id,

@@ -27,9 +27,10 @@ export class UsersService {
         nickname,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(nickname)}`,
       });
-      user = await this.userRepo.save(user);
+      await this.userRepo.createQueryBuilder().insert().values(user).orIgnore().execute();
+      user = await this.userRepo.findOne({ where: { wechatOpenId } });
     }
-    return user;
+    return user!;
   }
 
   async findOrCreateByDeviceId(deviceId: string): Promise<User> {
@@ -41,9 +42,10 @@ export class UsersService {
         nickname: `用户${shortId}`,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(deviceId)}`,
       });
-      user = await this.userRepo.save(user);
+      await this.userRepo.createQueryBuilder().insert().values(user).orIgnore().execute();
+      user = await this.userRepo.findOne({ where: { deviceId } });
     }
-    return user;
+    return user!;
   }
 
   async updateProfile(

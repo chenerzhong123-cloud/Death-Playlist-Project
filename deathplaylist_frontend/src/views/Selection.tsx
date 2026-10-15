@@ -51,7 +51,7 @@ export function Selection({ addedSongs, onGoBack, onAddSong, onRemoveSong, onCom
             className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/5"
           >
             <img
-              src={song.albumArt}
+              src={song.albumArt || undefined}
               alt={song.title}
               className="w-10 h-10 rounded-lg object-cover bg-zinc-800 shrink-0"
               referrerPolicy="no-referrer"

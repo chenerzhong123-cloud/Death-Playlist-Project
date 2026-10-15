@@ -1,5 +1,5 @@
 const app = getApp()
-const { request } = require('../../utils/api')
+const { getSharedPlaylistId } = require('../../utils/share')
 
 Page({
   data: {
@@ -12,12 +12,17 @@ Page({
     const info = wx.getWindowInfo()
     this.setData({ statusBarHeight: info.statusBarHeight })
 
-    if (options && options.playlistId) {
-      this.openSharedPlaylist(options.playlistId)
+    const id = getSharedPlaylistId(options)
+    if (id) {
+      app.globalData.sharedEntry = null
+      this.openSharedPlaylist(id)
     }
   },
 
   onShow() {
+    const id = getSharedPlaylistId(app.globalData.sharedEntry)
+    app.globalData.sharedEntry = null
+    if (id) this.openSharedPlaylist(id)
     const user = app.globalData.user
     const hasPlaylist = !!app.globalData.myPlaylistId
     if (user) this.setData({ user })
@@ -47,11 +52,11 @@ Page({
   },
 
   openSharedPlaylist(playlistId) {
-    request('/playlists/' + playlistId).then(function(playlist) {
-      app.globalData.sharedPlaylist = playlist
-      wx.navigateTo({ url: '/pages/playlist-detail/playlist-detail?id=' + playlistId })
-    }).catch(function() {
-      wx.showToast({ title: '歌单不存在或已删除', icon: 'none' })
+    if (this._openingPlaylistId === playlistId) return
+    this._openingPlaylistId = playlistId
+    wx.navigateTo({
+      url: '/pages/playlist-detail/playlist-detail?id=' + encodeURIComponent(playlistId),
+      complete: () => { this._openingPlaylistId = null },
     })
   },
 })

@@ -22,6 +22,9 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
   const [hasMore, setHasMore] = useState(false);
   const [currentOffset, setCurrentOffset] = useState(0);
   const loadMoreRef = useRef(false);
+  const requestVersion = useRef(0);
+  const queryRef = useRef(searchQuery);
+  queryRef.current = searchQuery;
   const { recommendedSongs } = useRecommend();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -32,35 +35,42 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
       setHasMore(false);
       return;
     }
-    if (offset === 0) setSearchLoading(true);
+    const version = ++requestVersion.current;
+    setSearchLoading(true);
     loadMoreRef.current = true;
     try {
       const data = await apiFetch(`/songs/search?q=${encodeURIComponent(query)}&limit=${PAGE_SIZE}&offset=${offset}`);
+      if (query !== queryRef.current || version !== requestVersion.current) return;
       if (append) {
-        const existingIds = new Set(searchResults.map(s => s.id));
-        const newSongs = data.filter((s: Song) => !existingIds.has(s.id));
-        if (newSongs.length === 0) {
-          setHasMore(false);
-        } else {
-          setSearchResults(prev => [...prev, ...newSongs]);
-        }
-        setHasMore(newSongs.length > 0 && data.length >= PAGE_SIZE);
+        setSearchResults(prev => {
+          const ids = new Set(prev.map(s => s.id));
+          return [...prev, ...data.filter((s: Song) => !ids.has(s.id))];
+        });
+        setHasMore(data.length >= PAGE_SIZE);
       } else {
         setSearchResults(data);
         setHasMore(data.length >= PAGE_SIZE);
       }
       setCurrentOffset(offset + data.length);
     } catch {
+      if (query !== queryRef.current || version !== requestVersion.current) return;
       if (!append) setSearchResults([]);
       setHasMore(false);
     } finally {
-      setSearchLoading(false);
-      loadMoreRef.current = false;
+      if (version === requestVersion.current) {
+        setSearchLoading(false);
+        loadMoreRef.current = false;
+      }
     }
   }, []);
 
   // Debounced search — reset on query change
   useEffect(() => {
+    requestVersion.current++;
+    loadMoreRef.current = false;
+    setSearchResults([]);
+    setHasMore(false);
+    setCurrentOffset(0);
     const timer = setTimeout(() => {
       setCurrentOffset(0);
       searchSongs(searchQuery, 0, false);
@@ -166,7 +176,7 @@ export function Picker({ addedSongs, onGoBack, onSelect, onToggle, onToast }: Pi
                   }`}
                 >
                   <img
-                    src={song.albumArt}
+                    src={song.albumArt || undefined}
                     alt={song.title}
                     className="w-10 h-10 rounded-lg object-cover shadow-md bg-zinc-800"
                     referrerPolicy="no-referrer"

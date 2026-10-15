@@ -19,7 +19,7 @@ export function SongRow({ song, isAdded, variant, onToggle, onRemove }: SongRowP
         className="flex items-center gap-3 p-2 rounded-xl bg-white/5 border border-white/5"
       >
         <img
-          src={song.albumArt}
+          src={song.albumArt || undefined}
           alt={song.title}
           className="w-8 h-8 rounded-md object-cover bg-zinc-800"
           referrerPolicy="no-referrer"
@@ -44,7 +44,7 @@ export function SongRow({ song, isAdded, variant, onToggle, onRemove }: SongRowP
       className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors group"
     >
       <img
-        src={song.albumArt}
+        src={song.albumArt || undefined}
         alt={song.title}
         className="w-10 h-10 rounded-lg object-cover shadow-md bg-zinc-800"
         referrerPolicy="no-referrer"

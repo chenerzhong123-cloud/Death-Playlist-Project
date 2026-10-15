@@ -4,7 +4,7 @@ import type { Song } from '../lib/api';
 
 const CACHE_KEY = 'deathplaylist_recs';
 const VISIT_KEY = 'deathplaylist_visit';
-const CACHE_VER = 5;
+const CACHE_VER = 6;
 const TARGET = 20;
 const CACHE_TTL = 24 * 60 * 60 * 1000;
 
@@ -22,7 +22,7 @@ const EXTRA_KEYWORDS = [
 ];
 
 function shuffleStrict(songs: Song[]): Song[] {
-  const pool = [...songs].sort(() => Math.random() - 0.5);
+  const pool = [...new Map(songs.map(song => [song.id, song])).values()].sort(() => Math.random() - 0.5);
   const result: Song[] = [];
   while (pool.length > 0) {
     const prev = result[result.length - 1];
@@ -70,7 +70,7 @@ export function useRecommend() {
   useEffect(() => {
     const load = async () => {
       try {
-        let visit = parseInt(localStorage.getItem(VISIT_KEY) || '0', 10);
+        let visit = (parseInt(localStorage.getItem(VISIT_KEY) || '0', 10) || 0);
         visit++;
         localStorage.setItem(VISIT_KEY, String(visit));
 
@@ -91,9 +91,7 @@ export function useRecommend() {
           return;
         }
 
-        const batchesToFetch = expired
-          ? KEYWORD_GROUPS.map((_, i) => i)
-          : [batchIndex];
+        const batchesToFetch = [batchIndex];
 
         const results = await Promise.all(
           batchesToFetch.map(i => fetchBatch(KEYWORD_GROUPS[i]))

@@ -1,7 +1,12 @@
 {
   "description": "死亡歌单 - 微信小程序壳",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "test"
+      }
+    ],
     "include": []
   },
   "setting": {

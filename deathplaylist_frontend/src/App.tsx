@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './hooks/useAuth';
 import { usePlaylist } from './hooks/usePlaylist';
@@ -14,7 +14,7 @@ import { Preview } from './views/Preview';
 import { Share } from './views/Share';
 import { Friends } from './views/Friends';
 import { apiFetch } from './lib/api';
-import type { Song } from './lib/api';
+import type { Song, PublicPlaylist } from './lib/api';
 import { analytics } from './lib/analytics';
 
 const INTRO_SUGGESTIONS = [
@@ -51,8 +51,8 @@ export default function App() {
   const suggestedIntro = useMemo(() => randomIntro(), []);
 
   // Read-only playlist viewing from URL params
-  const [viewingPlaylistId, setViewingPlaylistId] = useState<string | null>(null);
-  const [viewingUserName, setViewingUserName] = useState<string>('用户');
+  const [viewingPlaylist, setViewingPlaylist] = useState<PublicPlaylist | null>(null);
+  const sharing = useRef(false);
 
   // Name/gender popup state
   const [showNamePopup, setShowNamePopup] = useState(false);
@@ -61,40 +61,37 @@ export default function App() {
   // Force re-render when name changes
   const [nameVersion, setNameVersion] = useState(0);
 
-  const { user, setUser, authLoading } = useAuth();
+  const { user, setUser, authLoading, ensureUser } = useAuth();
 
   const {
     addedSongs, setAddedSongs, playlistIntro, setPlaylistIntro,
-    myPlaylistId, loadMyPlaylist, savePlaylist,
+    myPlaylistId, playlistLoaded, loadMyPlaylist, savePlaylist,
   } = usePlaylist();
 
   // Load my playlist when user is ready
   useEffect(() => {
-    if (user) loadMyPlaylist();
-  }, [user]);
+    if (user) loadMyPlaylist().catch(() => setToast('歌单加载失败，请重试'));
+  }, [user?.id, loadMyPlaylist]);
 
   // Handle ?playlist=xxx URL param for direct playlist viewing
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const playlistId = params.get('playlist');
+    let active = true;
     if (playlistId) {
-      window.history.replaceState({}, '', window.location.pathname);
       (async () => {
         try {
-          const playlist = await apiFetch(`/playlists/${playlistId}`);
-          setAddedSongs(playlist.songs.map((s: any) => ({
-            id: s.id, title: s.title, artist: s.artist, albumArt: s.albumArt,
-          })));
-          setPlaylistIntro(playlist.intro || '');
-          setViewingPlaylistId(playlistId);
-          setViewingUserName(playlist.user?.name || '用户');
+          const playlist: PublicPlaylist = await apiFetch(`/playlists/${encodeURIComponent(playlistId)}`);
+          if (!active) return;
+          setViewingPlaylist(playlist);
           analytics.playlistViewed();
           setView('share');
         } catch {
-          setToast('歌单不存在');
+          if (active) setToast('歌单不存在或暂时无法加载');
         }
       })();
     }
+    return () => { active = false; };
   }, []);
 
   // Toast auto-dismiss
@@ -141,14 +138,22 @@ export default function App() {
   };
 
   const doShare = async () => {
+    if (sharing.current) return;
+    sharing.current = true;
     try {
+      const currentUser = await ensureUser();
+      const nickname = getDisplayName(currentUser.nickname);
+      if (nickname !== currentUser.nickname) {
+        const profile = await apiFetch('/users/me', { method: 'PATCH', body: JSON.stringify({ nickname }) });
+        setUser(profile);
+      }
       await savePlaylist(playlistIntro || suggestedIntro, addedSongs);
       analytics.playlistCreated(addedSongs.length);
-      setViewingPlaylistId(null);
+      setViewingPlaylist(null);
       setView('share');
     } catch {
       setToast('保存失败，请重试');
-    }
+    } finally { sharing.current = false; }
   };
 
   const handleNameConfirm = async () => {
@@ -163,7 +168,7 @@ export default function App() {
     await doShare();
   };
 
-  if (authLoading) {
+  if (!viewingPlaylist && (authLoading || (user && !playlistLoaded))) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-white/30 text-sm">加载中...</div>
@@ -236,20 +241,23 @@ export default function App() {
         )}
 
         {view === 'share' && (() => {
-          const shareUserName = viewingPlaylistId
-            ? viewingUserName
+          const shareUserName = viewingPlaylist
+            ? viewingPlaylist.user?.name || '用户'
             : getDisplayName(user?.nickname || '用户');
           return (
             <Share
-              playlistId={viewingPlaylistId || myPlaylistId || ''}
+              playlistId={viewingPlaylist?.id || myPlaylistId || ''}
               userName={shareUserName}
-              playlistIntro={playlistIntro}
+              playlistIntro={viewingPlaylist ? viewingPlaylist.intro : playlistIntro}
               suggestedIntro={suggestedIntro}
-              addedSongs={addedSongs}
-              isViewing={!!viewingPlaylistId}
+              addedSongs={viewingPlaylist ? viewingPlaylist.songs : addedSongs}
+              isViewing={!!viewingPlaylist}
               onGoBack={() => {
-                setViewingPlaylistId(null);
-                setView(viewingPlaylistId ? 'landing' : 'preview');
+                setViewingPlaylist(null);
+                setView(viewingPlaylist ? 'landing' : 'preview');
+                const url = new URL(window.location.href);
+                url.searchParams.delete('playlist');
+                window.history.replaceState({}, '', url.pathname + url.search + url.hash);
               }}
               onToast={setToast}
             />

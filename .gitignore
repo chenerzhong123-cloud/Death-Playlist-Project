@@ -10,3 +10,7 @@ coverage/
 
 deathplaylist_backends/static/
 deathplaylist_backends/death_playlist.db
+
+*.db-shm
+*.db-wal
+*.tsbuildinfo

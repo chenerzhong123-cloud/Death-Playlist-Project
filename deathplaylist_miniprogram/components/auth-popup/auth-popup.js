@@ -33,6 +33,7 @@ Component({
         var user = await loginWithCode(loginRes.code, nickname)
         var app = getApp()
         app.globalData.user = user
+        await app.loadMyPlaylist(true)
         this.triggerEvent('login', { user: user })
         this.setData({ nickname: '' })
       } catch (e) {

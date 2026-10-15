@@ -7,10 +7,14 @@ on:
       - 'deathplaylist_frontend/**'
       - 'deathplaylist_backends/**'
       - '.github/workflows/deploy.yml'
+      - '.github/workflows/ci.yml'
   workflow_dispatch:
 
 jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
   deploy:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
@@ -38,7 +42,7 @@ jobs:
             fi
 
             cd deathplaylist_frontend
-            npm install --prefer-offline
+            npm ci --prefer-offline
             npm run build
 
             cd "$REPO"
@@ -46,7 +50,7 @@ jobs:
             cp -r deathplaylist_frontend/dist deathplaylist_backends/static
 
             cd deathplaylist_backends
-            npm install --prefer-offline
+            npm ci --prefer-offline
             npm run build
             docker build -t deathplaylist .
             docker rm -f deathplaylist || true

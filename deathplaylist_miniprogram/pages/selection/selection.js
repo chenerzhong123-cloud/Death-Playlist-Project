@@ -16,8 +16,9 @@ Page({
 
   onLoad: function() {
     var added = app.globalData.addedSongs || []
-    this.setData({
-      addedSongs: added,
+    this.setData({ addedSongs: added })
+    if (app.loginPromise) app.loginPromise.then(() => {
+      if (!app.globalData.playlistDirty) this.setData({ addedSongs: app.globalData.addedSongs || [] })
     })
   },
 
@@ -27,6 +28,7 @@ Page({
     app.globalData._pendingPick = null
 
     if (pick) {
+      app.globalData.playlistDirty = true
       if (pick.slotIndex < addedSongs.length) {
         addedSongs[pick.slotIndex] = pick.song
       } else {
@@ -43,6 +45,7 @@ Page({
   },
 
   removeSong: function(e) {
+    app.globalData.playlistDirty = true
     var index = e.currentTarget.dataset.index
     var addedSongs = this.data.addedSongs
     addedSongs.splice(index, 1)
@@ -139,6 +142,7 @@ Page({
     var songs = this.data.addedSongs.slice()
 
     if (from !== to && from >= 0 && to >= 0) {
+      app.globalData.playlistDirty = true
       var moved = songs.splice(from, 1)[0]
       songs.splice(to, 0, moved)
       app.globalData.addedSongs = songs

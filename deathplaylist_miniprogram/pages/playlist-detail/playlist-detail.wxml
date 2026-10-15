@@ -30,6 +30,6 @@
   </block>
 
   <view wx:else class="empty-state">
-    <text class="empty-text">加载中...</text>
+    <text class="empty-text">{{loadError ? '歌单不存在或暂时无法加载' : '加载中...'}} </text>
   </view>
 </view>

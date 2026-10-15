@@ -131,9 +131,7 @@ async function loadRecommendations() {
       return ensureNoAdjacent(cached.batches[batchIndex])
     }
 
-    const batchesToFetch = expired
-      ? KEYWORD_GROUPS.map((_, i) => i)
-      : [batchIndex]
+    const batchesToFetch = [batchIndex]
 
     // Fetch batches sequentially (one group at a time)
     const results = []

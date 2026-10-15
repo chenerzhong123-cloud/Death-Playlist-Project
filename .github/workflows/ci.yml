@@ -1,0 +1,31 @@
+name: Regression checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            deathplaylist_backends/package-lock.json
+            deathplaylist_frontend/package-lock.json
+      - run: npm ci
+        working-directory: deathplaylist_backends
+      - run: npm run lint && npm test && npm run build
+        working-directory: deathplaylist_backends
+      - run: npm ci
+        working-directory: deathplaylist_frontend
+      - run: npm run lint && npm test && npm run build
+        working-directory: deathplaylist_frontend
+      - run: node --test deathplaylist_miniprogram/test/*.test.js
+      - name: Check mini program JavaScript syntax
+        run: find deathplaylist_miniprogram -name '*.js' -not -path '*/test/*' -exec node --check {} \;

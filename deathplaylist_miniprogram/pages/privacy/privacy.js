@@ -8,7 +8,7 @@ Page({
     var app = getApp()
     var url = app.globalData && app.globalData.privacyUrl
       ? app.globalData.privacyUrl
-      : 'https://prod-1gis5b1g29ea3aec.ap-shanghai.run.tcloudbase.com/privacy.html'
+      : 'https://www.deuce.monster/deathplaylist/privacy.html'
 
     var self = this
     wx.request({

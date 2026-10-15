@@ -1,6 +1,6 @@
 const app = getApp()
 const { API_BASE } = require('../../utils/api')
-const { generate: generateQR } = require('../../utils/qrcode')
+const { playlistPath } = require('../../utils/share')
 
 Page({
   data: {
@@ -8,6 +8,7 @@ Page({
     playlistIntro: '',
     songs: [],
     shareImagePath: '',
+    shareError: false,
   },
 
   onLoad() {
@@ -18,33 +19,45 @@ Page({
       songs: app.globalData.addedSongs || [],
     })
     this.playlistId = app.globalData.myPlaylistId
+  },
+
+  onReady() {
     this.drawShareCard()
   },
 
-  drawShareCard() {
-    const wxacodePromise = this.loadWxaCode()
-    const query = wx.createSelectorQuery()
-    query.select('#shareCanvas')
-      .fields({ node: true, size: true })
-      .exec(async (res) => {
-        if (!res[0]) return
-        const canvas = res[0].node
-        const wxacodePath = await wxacodePromise
-        await this._drawCard(canvas, wxacodePath)
+  async drawShareCard() {
+    if (this._drawing) return
+    this._drawing = true
+    this.setData({ shareError: false })
+    try {
+      const canvas = await new Promise((resolve, reject) => {
+        wx.createSelectorQuery().in(this).select('#shareCanvas')
+          .fields({ node: true, size: true }).exec(res => {
+            if (res[0] && res[0].node) resolve(res[0].node)
+            else reject(new Error('Canvas unavailable'))
+          })
       })
+      const codePath = await this.loadWxaCode()
+      if (!codePath) throw new Error('Share code unavailable')
+      await this._drawCard(canvas, codePath)
+    } catch {
+      this.setData({ shareError: true })
+      wx.showToast({ title: '分享图片生成失败，请重试', icon: 'none' })
+    } finally { this._drawing = false }
   },
 
   async loadWxaCode() {
     if (!this.playlistId) return null
-    return new Promise((resolve) => {
+    const download = suffix => new Promise(resolve => {
       wx.downloadFile({
-        url: `${API_BASE}/share/${this.playlistId}/wxacode`,
-        success: (res) => {
-          resolve(res.statusCode === 200 ? res.tempFilePath : null)
-        },
+        url: `${API_BASE}/share/${encodeURIComponent(this.playlistId)}/${suffix}`,
+        timeout: 10000,
+        success: res => resolve(res.statusCode === 200 ? res.tempFilePath : null),
         fail: () => resolve(null),
       })
     })
+    // If WeChat is temporarily unavailable, the fallback still opens this playlist.
+    return await download('wxacode') || await download('qrcode')
   },
 
   truncateText(ctx, text, maxWidth) {
@@ -111,8 +124,9 @@ Page({
     if (wxacodePath) {
       wxacodeImg = await new Promise((resolve) => {
         const img = canvas.createImage()
-        img.onload = () => resolve(img)
-        img.onerror = () => resolve(null)
+        const timeout = setTimeout(() => resolve(null), 8000)
+        img.onload = () => { clearTimeout(timeout); resolve(img) }
+        img.onerror = () => { clearTimeout(timeout); resolve(null) }
         img.src = wxacodePath
       })
     }
@@ -170,24 +184,12 @@ Page({
     const qrX = W - pad - qrSize
     const qrY = footerY
 
-    if (wxacodeImg) {
-      ctx.save()
-      this.roundRect(ctx, qrX, qrY, qrSize, qrSize, 4)
-      ctx.clip()
-      ctx.drawImage(wxacodeImg, qrX, qrY, qrSize, qrSize)
-      ctx.restore()
-    } else {
-      const qrData = generateQR('死亡歌单')
-      const cellSize = qrSize / qrData.size
-      for (let r = 0; r < qrData.size; r++) {
-        for (let c = 0; c < qrData.size; c++) {
-          if (qrData.matrix[r][c]) {
-            ctx.fillStyle = 'rgba(255,255,255,0.6)'
-            ctx.fillRect(qrX + c * cellSize, qrY + r * cellSize, cellSize + 0.5, cellSize + 0.5)
-          }
-        }
-      }
-    }
+    if (!wxacodeImg) throw new Error('Share code unavailable')
+    ctx.save()
+    this.roundRect(ctx, qrX, qrY, qrSize, qrSize, 4)
+    ctx.clip()
+    ctx.drawImage(wxacodeImg, qrX, qrY, qrSize, qrSize)
+    ctx.restore()
 
     // Footer text on the left
     ctx.fillStyle = 'rgba(255,255,255,0.4)'
@@ -200,13 +202,15 @@ Page({
     ctx.fillText('定义自己生命的最后乐章', pad, footerY + 28)
 
     // Export
-    wx.canvasToTempFilePath({
+    await new Promise((resolve, reject) => wx.canvasToTempFilePath({
       canvas,
       quality: 0.9,
       success: (res) => {
         this.setData({ shareImagePath: res.tempFilePath })
+        resolve(res.tempFilePath)
       },
-    })
+      fail: reject,
+    }))
   },
 
   roundRect(ctx, x, y, w, h, r) {
@@ -254,7 +258,7 @@ Page({
   onShareAppMessage() {
     return {
       title: `${this.data.userName}的死亡歌单 — 定义自己生命的最后乐章`,
-      path: '/pages/index/index',
+      path: playlistPath(this.playlistId),
       imageUrl: this.data.shareImagePath || '',
     }
   },

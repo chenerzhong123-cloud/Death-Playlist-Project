@@ -89,6 +89,8 @@ Page({
 
   goBack() {
     app.globalData.addedSongs = this.data.songs
+    app.globalData.playlistIntro = this.data.playlistIntro
+    app.globalData.playlistDirty = true
     wx.navigateBack()
   },
 
@@ -102,6 +104,8 @@ Page({
   },
 
   async doSave() {
+    if (this._saving) return
+    this._saving = true
     const { songs } = this.data
     const intro = this.data.playlistIntro || this.data.suggestedIntro || ''
     const songsPayload = songs.map(s => ({
@@ -112,28 +116,33 @@ Page({
     }))
 
     try {
+      let saved
       let playlistId = app.globalData.myPlaylistId
       if (playlistId) {
         const updated = await request(`/playlists/${playlistId}`, {
           method: 'PUT',
           data: { intro, songs: songsPayload },
         })
+        saved = updated
         app.globalData.myPlaylistId = updated.id
       } else {
         const created = await request('/playlists', {
           method: 'POST',
           data: { intro, songs: songsPayload },
         })
+        saved = created
         app.globalData.myPlaylistId = created.id
       }
 
-      app.globalData.addedSongs = songs
+      app.globalData.addedSongs = saved.songs
+      this.setData({ songs: saved.songs })
       app.globalData.playlistIntro = intro
+      app.globalData.playlistDirty = false
 
       wx.navigateTo({ url: '/pages/share/share' })
     } catch {
       wx.showToast({ title: '保存失败，请重试', icon: 'none' })
-    }
+    } finally { this._saving = false }
   },
 
   onLogin() {
@@ -146,6 +155,7 @@ Page({
 
   onCloseAuth() {
     this.setData({ showAuthPopup: false })
+    this._pendingAction = null
   },
 
   onShareAppMessage() {

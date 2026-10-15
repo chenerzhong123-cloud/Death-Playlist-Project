@@ -12,58 +12,36 @@ function getHeaders() {
   return h
 }
 
-function wxRequest(path, options = {}) {
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: `${API_BASE}${path}`,
-      method: options.method || 'GET',
-      data: options.data,
-      header: { ...getHeaders(), ...(options.header || {}) },
-      success(res) {
-        if (res.statusCode === 401) {
-          wx.removeStorageSync('jwt')
-          wx.removeStorageSync('user')
-          getApp().globalData.user = null
-          reject(new Error('登录已过期，请重新登录'))
-          return
-        }
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(res.data)
-        } else {
-          reject(new Error(`API Error: ${res.statusCode}`))
-        }
-      },
-      fail: reject,
-    })
-  })
-}
-
-function containerRequest(path, options = {}) {
-  return new Promise((resolve, reject) => {
-    wx.cloud.callContainer({
-      config: { env: CLOUD_ENV },
-      serviceName: SERVICE_NAME,
-      path: path,
-      method: options.method || 'GET',
-      data: options.data,
-      header: { ...getHeaders(), ...(options.header || {}) },
-      success(res) {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(res.data)
-        } else {
-          reject(new Error(`API Error: ${res.statusCode}`))
-        }
-      },
-      fail: reject,
-    })
-  })
+function responseError(res, headers) {
+  if (res.statusCode === 401 && wx.getStorageSync('jwt') &&
+      headers.Authorization === `Bearer ${wx.getStorageSync('jwt')}`) {
+    wx.removeStorageSync('jwt')
+    wx.removeStorageSync('user')
+    getApp().globalData.user = null
+  }
+  const error = new Error(res.statusCode === 401 ? '登录已过期，请重新登录' : `API Error: ${res.statusCode}`)
+  error.status = res.statusCode
+  return error
 }
 
 function request(path, options = {}) {
-  if (USE_CALL_CONTAINER && CLOUD_ENV) {
-    return containerRequest(path, options)
-  }
-  return wxRequest(path, options)
+  const headers = { ...getHeaders(), ...(options.header || {}) }
+  return new Promise((resolve, reject) => {
+    const config = {
+      method: options.method || 'GET', data: options.data, header: headers,
+      success(res) {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data)
+        else reject(responseError(res, headers))
+      },
+      fail: reject,
+    }
+    if (USE_CALL_CONTAINER && CLOUD_ENV) {
+      wx.cloud.callContainer({ ...config, config: { env: CLOUD_ENV },
+        serviceName: SERVICE_NAME, path: '/api' + path })
+    } else {
+      wx.request({ ...config, url: API_BASE + path, timeout: 15000 })
+    }
+  })
 }
 
 module.exports = { request, API_BASE }
