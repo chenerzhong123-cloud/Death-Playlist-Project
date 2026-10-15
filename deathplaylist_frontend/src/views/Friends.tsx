@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import { apiFetch } from '../lib/api';
@@ -36,7 +36,7 @@ function PlaylistCard({ fp, isMine }: { fp: PublicPlaylist; isMine?: boolean; ke
         {fp.songs.map((song, idx) => (
           <div key={`${fp.id}-${song.id}`} className="flex items-center" style={{ height: 54 }}>
             <img
-              src={song.albumArt}
+              src={song.albumArt || undefined}
               alt={song.title}
               className="w-[44px] h-[44px] rounded-lg object-cover shrink-0"
               referrerPolicy="no-referrer"
@@ -61,26 +61,18 @@ function PlaylistCard({ fp, isMine }: { fp: PublicPlaylist; isMine?: boolean; ke
 
 export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBack }: FriendsProps) {
   const [publicPlaylists, setPublicPlaylists] = useState<PublicPlaylist[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  const loadPlaylists = async () => {
+  useEffect(() => {
+    let active = true;
     setLoading(true);
-    try {
-      const data = await apiFetch('/playlists/public');
-      setPublicPlaylists(data);
-    } catch {
-      setPublicPlaylists([]);
-    } finally {
-      setLoading(false);
-      setLoaded(true);
-    }
-  };
-
-  // Trigger load on first render
-  if (!loaded && !loading) {
-    loadPlaylists();
-  }
+    apiFetch('/playlists/public').then(data => {
+      if (active) { setPublicPlaylists(data); setError(false); }
+    }).catch(() => { if (active) setError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [user?.id]);
 
   const displayName = getDisplayName(user?.nickname || '用户');
 
@@ -112,6 +104,8 @@ export function Friends({ user, myPlaylistId, playlistIntro, addedSongs, onGoBac
       <div className="flex-1 overflow-y-auto p-4 pb-8">
         {loading ? (
           <div className="py-12 text-center text-white/30 text-sm">加载中...</div>
+        ) : error ? (
+          <div className="py-12 text-center text-white/30 text-sm">歌单加载失败，请稍后重试</div>
         ) : !hasMine && publicPlaylists.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center py-20 space-y-4">
             <div className="w-20 h-20 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-3xl opacity-30">

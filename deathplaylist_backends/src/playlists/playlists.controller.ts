@@ -12,11 +12,12 @@ import {
 } from '@nestjs/common';
 import { PlaylistsService } from './playlists.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { IsString, IsOptional, IsArray, ValidateNested, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsArray, ValidateNested, MaxLength, ArrayMinSize, ArrayMaxSize, ArrayUnique, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class SongItemDto {
   @IsString()
+  @IsNotEmpty()
   externalId: string;
 
   @IsString()
@@ -41,6 +42,9 @@ class CreatePlaylistDto {
   bgImage?: string;
 
   @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(9)
+  @ArrayUnique((song: SongItemDto) => song.externalId)
   @ValidateNested({ each: true })
   @Type(() => SongItemDto)
   songs: SongItemDto[];
@@ -58,6 +62,9 @@ class UpdatePlaylistDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(9)
+  @ArrayUnique((song: SongItemDto) => song.externalId)
   @ValidateNested({ each: true })
   @Type(() => SongItemDto)
   songs?: SongItemDto[];
@@ -88,7 +95,7 @@ export class PlaylistsController {
     return playlists.map((p) => this.playlistsService.formatPlaylist(p));
   }
 
-  @Get('public')
+  @Get(['public', 'friends'])
   @UseGuards(JwtAuthGuard)
   async getPublicPlaylists(@Request() req: { user: { userId: string } }) {
     const playlists = await this.playlistsService.getPublicPlaylists(

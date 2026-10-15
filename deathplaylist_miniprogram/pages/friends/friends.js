@@ -14,15 +14,11 @@ Page({
     ],
   },
 
-  onLoad() {
-    const user = app.globalData.user
-    console.log('[friends] onLoad, user:', user ? user.nickname : 'null')
-    if (user) {
-      this.loadFriendsPlaylists()
-    } else {
-      this.setData({ isGuest: true })
-      console.log('[friends] set isGuest=true')
-    }
+  async onShow() {
+    this.setData({ loading: true })
+    if (app.loginPromise) await app.loginPromise
+    if (app.globalData.user) this.loadFriendsPlaylists()
+    else this.setData({ isGuest: true, loading: false })
   },
 
   async loadFriendsPlaylists() {
@@ -49,11 +45,8 @@ Page({
       this.setData({ playlists: allPlaylists, loading: false })
     } catch (e) {
       console.error('[friends] loadFriendsPlaylists failed:', e)
-      // Auth expired → treat as guest
-      app.globalData.user = null
-      wx.removeStorageSync('jwt')
-      wx.removeStorageSync('user')
-      this.setData({ playlists: [], loading: false, isGuest: true })
+      this.setData({ loading: false, isGuest: !app.globalData.user })
+      wx.showToast({ title: '歌单加载失败，请稍后重试', icon: 'none' })
     }
   },
 

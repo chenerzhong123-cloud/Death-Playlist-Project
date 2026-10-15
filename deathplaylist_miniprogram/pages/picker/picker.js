@@ -13,6 +13,7 @@ Page({
   },
 
   _searchTimer: null,
+  _requestVersion: 0,
 
   onLoad: function(options) {
     this.setData({
@@ -28,6 +29,7 @@ Page({
 
   onSearchInput: function(e) {
     var query = e.detail.value
+    this._requestVersion++
     this.setData({ searchQuery: query })
     clearTimeout(this._searchTimer)
     if (!query.trim()) {
@@ -39,17 +41,22 @@ Page({
   },
 
   clearSearch: function() {
-    this.setData({ searchQuery: '' })
+    clearTimeout(this._searchTimer)
+    this._requestVersion++
+    this.setData({ searchQuery: '', searchLoading: false })
     this.loadRecs()
   },
 
   searchSongs: function(query) {
     if (!query.trim()) return
     var self = this
+    var version = ++this._requestVersion
     self.setData({ searchLoading: true })
     api.request('/songs/search?q=' + encodeURIComponent(query) + '&limit=20').then(function(data) {
+      if (version !== self._requestVersion || self.data.searchQuery !== query) return
       self.setData({ songs: data, searchLoading: false })
     }).catch(function() {
+      if (version !== self._requestVersion || self.data.searchQuery !== query) return
       self.setData({ songs: [], searchLoading: false })
     })
   },
@@ -57,7 +64,7 @@ Page({
   loadRecs: function() {
     var self = this
     recommend.loadRecommendations().then(function(songs) {
-      self.setData({ songs: songs })
+      if (!self.data.searchQuery.trim()) self.setData({ songs: songs, searchLoading: false })
     }).catch(function(e) {
       console.error('[picker] loadRecs failed:', e)
     })
@@ -140,6 +147,11 @@ Page({
       }
       wx.navigateBack()
     }
+  },
+
+  onUnload: function() {
+    clearTimeout(this._searchTimer)
+    this._requestVersion++
   },
 
   goBack: function() {

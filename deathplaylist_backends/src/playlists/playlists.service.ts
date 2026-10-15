@@ -4,7 +4,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, EntityManager, Not } from 'typeorm';
+import { Song } from '../songs/song.entity';
 import { Playlist } from './playlist.entity';
 import { PlaylistSong } from './playlist-song.entity';
 import { SongsService } from '../songs/songs.service';
@@ -23,51 +24,69 @@ export class PlaylistsService {
   constructor(
     @InjectRepository(Playlist)
     private playlistRepo: Repository<Playlist>,
-    @InjectRepository(PlaylistSong)
-    private playlistSongRepo: Repository<PlaylistSong>,
     private songsService: SongsService,
   ) {}
 
   private async upsertPlaylistSongs(
     playlistId: string,
     songs: SongInput[],
+    manager: EntityManager,
   ): Promise<void> {
     const playlistSongs: PlaylistSong[] = [];
+    const songIds = new Set<string>();
     for (let i = 0; i < songs.length; i++) {
       const song = await this.songsService.findOrCreate({
         externalId: songs[i].externalId,
         title: songs[i].title,
         artist: songs[i].artist,
         albumArt: songs[i].albumArt || undefined,
-      });
+      }, manager.getRepository(Song));
+      if (songIds.has(song.id)) throw new BadRequestException('不能重复添加同一首歌曲');
+      songIds.add(song.id);
       playlistSongs.push(
-        this.playlistSongRepo.create({
+        manager.create(PlaylistSong, {
           playlistId,
           songId: song.id,
           sortOrder: i,
         }),
       );
     }
-    await this.playlistSongRepo.save(playlistSongs);
+    await manager.save(PlaylistSong, playlistSongs);
+  }
+
+  // SQLite uses a single connection: serialize playlist transactions so overlapping
+  // requests cannot commit/roll back each other's writes.
+  private mutationTail: Promise<unknown> = Promise.resolve();
+
+  private mutate<T>(action: () => Promise<T>): Promise<T> {
+    const result = this.mutationTail.then(action);
+    this.mutationTail = result.catch(() => undefined);
+    return result;
+  }
+
+  private validateSongs(songs: SongInput[]) {
+    if (!songs.length || songs.length > MAX_SONGS) {
+      throw new BadRequestException(`歌单需包含1至${MAX_SONGS}首音乐`);
+    }
   }
 
   async create(
     userId: string,
     data: { intro?: string; bgImage?: string; songs: SongInput[] },
   ): Promise<Playlist> {
-    if (data.songs.length > MAX_SONGS) {
-      throw new BadRequestException(`最多只能添加${MAX_SONGS}首音乐`);
-    }
-
-    const saved = await this.playlistRepo.save(
-      this.playlistRepo.create({
-        userId,
-        intro: data.intro || '',
-        bgImage: data.bgImage || undefined,
-      }),
-    );
-    await this.upsertPlaylistSongs(saved.id, data.songs);
-    return this.findById(saved.id);
+    this.validateSongs(data.songs);
+    return this.mutate(async () => {
+      const id = await this.playlistRepo.manager.transaction(async (manager) => {
+        const existing = await manager.findOneBy(Playlist, { userId });
+        if (existing) throw new BadRequestException('每人只能创建一份歌单，请使用更新接口');
+        const saved = await manager.save(Playlist, manager.create(Playlist, {
+          userId, intro: data.intro || '', bgImage: data.bgImage || undefined,
+        }));
+        await this.upsertPlaylistSongs(saved.id, data.songs, manager);
+        return saved.id;
+      });
+      return this.findById(id);
+    });
   }
 
   async update(
@@ -75,29 +94,23 @@ export class PlaylistsService {
     userId: string,
     data: { intro?: string; bgImage?: string; songs?: SongInput[] },
   ): Promise<Playlist> {
-    const playlist = await this.playlistRepo.findOne({
-      where: { id, userId },
+    if (data.songs !== undefined) this.validateSongs(data.songs);
+    return this.mutate(async () => {
+      await this.playlistRepo.manager.transaction(async (manager) => {
+        const playlist = await manager.findOneBy(Playlist, { id, userId });
+        if (!playlist) throw new NotFoundException('歌单不存在');
+        if (data.intro !== undefined) playlist.intro = data.intro;
+        if (data.bgImage !== undefined) playlist.bgImage = data.bgImage;
+        // Always touch updatedAt, including updates that only reorder songs.
+        playlist.updatedAt = new Date();
+        await manager.save(Playlist, playlist);
+        if (data.songs !== undefined) {
+          await manager.delete(PlaylistSong, { playlistId: id });
+          await this.upsertPlaylistSongs(id, data.songs, manager);
+        }
+      });
+      return this.findById(id);
     });
-    if (!playlist) throw new NotFoundException('歌单不存在');
-
-    if (data.intro !== undefined) playlist.intro = data.intro;
-    if (data.bgImage !== undefined) playlist.bgImage = data.bgImage;
-
-    const hasMetaChanges =
-      data.intro !== undefined || data.bgImage !== undefined;
-    if (hasMetaChanges) {
-      await this.playlistRepo.save(playlist);
-    }
-
-    if (data.songs) {
-      if (data.songs.length > MAX_SONGS) {
-        throw new BadRequestException(`最多只能添加${MAX_SONGS}首音乐`);
-      }
-      await this.playlistSongRepo.delete({ playlistId: id });
-      await this.upsertPlaylistSongs(id, data.songs);
-    }
-
-    return this.findById(id);
   }
 
   async findById(id: string): Promise<Playlist> {
@@ -119,26 +132,25 @@ export class PlaylistsService {
   }
 
   async delete(id: string, userId: string): Promise<void> {
-    const playlist = await this.playlistRepo.findOne({
-      where: { id, userId },
+    await this.mutate(async () => {
+      const playlist = await this.playlistRepo.findOneBy({ id, userId });
+      if (!playlist) throw new NotFoundException('歌单不存在');
+      await this.playlistRepo.remove(playlist);
     });
-    if (!playlist) throw new NotFoundException('歌单不存在');
-    await this.playlistRepo.remove(playlist);
   }
 
   async getPublicPlaylists(excludeUserId?: string): Promise<Playlist[]> {
     const playlists = await this.playlistRepo.find({
       relations: ['user', 'playlistSongs', 'playlistSongs.song'],
+      where: excludeUserId ? { userId: Not(excludeUserId) } : {},
       order: { updatedAt: 'DESC' },
     });
-    if (excludeUserId) {
-      return playlists.filter((p) => p.userId !== excludeUserId);
-    }
     return playlists;
   }
 
   async incrementLikes(id: string): Promise<void> {
-    await this.playlistRepo.increment({ id }, 'likes', 1);
+    const result = await this.playlistRepo.increment({ id }, 'likes', 1);
+    if (!result.affected) throw new NotFoundException('歌单不存在');
   }
 
   formatPlaylist(playlist: Playlist) {
@@ -154,7 +166,7 @@ export class PlaylistsService {
             avatar: playlist.user.avatar,
           }
         : null,
-      songs: (playlist.playlistSongs || []).map((ps) => ({
+      songs: [...(playlist.playlistSongs || [])].sort((a, b) => a.sortOrder - b.sortOrder).map((ps) => ({
         id: ps.song.id,
         externalId: ps.song.externalId,
         title: ps.song.title,

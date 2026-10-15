@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Download, Link2 } from 'lucide-react';
 import { API_BASE } from '../lib/api';
@@ -23,8 +23,9 @@ const loadImg = (src: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = reject;
+    const timeout = setTimeout(() => { img.src = ''; reject(new Error('Image timed out')); }, 8000);
+    img.onload = () => { clearTimeout(timeout); resolve(img); };
+    img.onerror = (error) => { clearTimeout(timeout); reject(error); };
     img.src = src;
   });
 
@@ -51,7 +52,8 @@ async function drawShareCard(opts: {
   const canvas = document.createElement('canvas');
   canvas.width = W * scale;
   canvas.height = H * scale;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas unavailable');
   ctx.scale(scale, scale);
 
   // Background — plain black
@@ -84,10 +86,7 @@ async function drawShareCard(opts: {
   }));
 
   // Load QR code image
-  let qrImg: HTMLImageElement | null = null;
-  try {
-    qrImg = await loadImg(opts.qrSrc);
-  } catch {}
+  const qrImg = await loadImg(opts.qrSrc);
 
   // Songs
   ctx.textAlign = 'left';
@@ -186,10 +185,15 @@ function truncateText(ctx: CanvasRenderingContext2D, text: string, maxWidth: num
 export function Share({ playlistId, userName, playlistIntro, suggestedIntro, addedSongs, isViewing, onGoBack, onToast }: ShareProps) {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
-  const shareUrl = `https://www.deuce.monster/deathplaylist/?playlist=${playlistId}`;
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareUrl)}`;
+  const saving = useRef(false);
+  const url = new URL(import.meta.env.BASE_URL, window.location.origin);
+  url.searchParams.set('playlist', playlistId);
+  const shareUrl = url.toString();
+  const qrSrc = `${API_BASE}/share/${encodeURIComponent(playlistId)}/qrcode`;
 
   const saveImage = async () => {
+    if (!playlistId || saving.current) return;
+    saving.current = true;
     try {
       const dataUrl = await drawShareCard({
         userName,
@@ -212,7 +216,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
     } catch (e) {
       console.error('Save image failed:', e);
       onToast('生成图片失败');
-    }
+    } finally { saving.current = false; }
   };
 
   const copyLink = async () => {
@@ -231,8 +235,9 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
       textarea.style.left = '-9999px';
       document.body.appendChild(textarea);
       textarea.select();
-      document.execCommand('copy');
+      const copied = document.execCommand('copy');
       document.body.removeChild(textarea);
+      if (!copied) throw new Error('Copy unavailable');
       analytics.playlistShared('copy_link');
       onToast('链接已复制');
     } catch {
@@ -272,7 +277,7 @@ export function Share({ playlistId, userName, playlistIntro, suggestedIntro, add
               return (
                 <div key={`share-${song.id}`} className="flex items-center" style={{ height: 54 }}>
                   <img
-                    src={song.albumArt}
+                    src={song.albumArt || undefined}
                     alt={song.title}
                     className="w-[44px] h-[44px] rounded-lg object-cover shrink-0"
                     referrerPolicy="no-referrer"

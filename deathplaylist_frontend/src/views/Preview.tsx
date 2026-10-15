@@ -50,7 +50,7 @@ export function Preview({ userName, playlistIntro, suggestedIntro, addedSongs, o
               >
                 <div className="text-sm font-mono text-white/30 w-5">{String(idx + 1).padStart(2, '0')}</div>
                 <img
-                  src={song.albumArt}
+                  src={song.albumArt || undefined}
                   alt={song.title}
                   className="w-10 h-10 rounded-lg object-cover bg-zinc-800 shrink-0"
                   referrerPolicy="no-referrer"

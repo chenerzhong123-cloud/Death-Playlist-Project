@@ -25,15 +25,6 @@ async function loginWithCode(code, nickname) {
   return setSession(data)
 }
 
-async function loginWithMock(nickname) {
-  const name = (nickname || '').trim() || '微信用户'
-  const data = await request('/auth/wechat', {
-    method: 'POST',
-    data: { code: `mock_${name}`, nickname: name },
-  })
-  return setSession(data)
-}
-
 async function fetchProfile() {
   const profile = await request('/users/me')
   const user = { id: profile.id, nickname: profile.nickname, avatar: profile.avatar }
@@ -47,9 +38,8 @@ async function tryAutoLogin() {
   if (token) {
     try {
       return await fetchProfile()
-    } catch {
-      wx.removeStorageSync('jwt')
-      wx.removeStorageSync('user')
+    } catch (error) {
+      if (error.status !== 401) return null
     }
   }
 
@@ -71,4 +61,4 @@ function logout() {
   wx.removeStorageSync('user')
 }
 
-module.exports = { isLoggedIn, getUser, setSession, loginWithCode, loginWithMock, fetchProfile, tryAutoLogin, logout }
+module.exports = { isLoggedIn, getUser, setSession, loginWithCode, fetchProfile, tryAutoLogin, logout }

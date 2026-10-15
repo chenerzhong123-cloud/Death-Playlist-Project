@@ -1,46 +1,41 @@
-var app = getApp()
+const { getSharedPlaylistId, playlistPath } = require('../../utils/share')
 
 Page({
   data: {
     playlist: null,
     userName: '',
+    loadError: false,
   },
 
   onLoad(options) {
-    var playlist = app.globalData.sharedPlaylist
-    if (playlist) {
-      this.setData({
-        playlist: playlist,
-        userName: playlist.user ? playlist.user.name : '用户',
-      })
-      app.globalData.sharedPlaylist = null
-    } else if (options && options.id) {
-      this.loadPlaylist(options.id)
-    }
+    const id = getSharedPlaylistId(options)
+    if (id) this.loadPlaylist(id)
+    else this.setData({ loadError: true })
   },
 
   loadPlaylist(id) {
     var self = this
     var api = require('../../utils/api')
-    api.request('/playlists/' + id).then(function(data) {
+    api.request('/playlists/' + encodeURIComponent(id)).then(function(data) {
       self.setData({
         playlist: data,
         userName: data.user ? data.user.name : '用户',
       })
     }).catch(function() {
+      self.setData({ loadError: true })
       wx.showToast({ title: '歌单不存在或已删除', icon: 'none' })
     })
   },
 
   goBack() {
-    wx.navigateBack()
+    wx.navigateBack({ fail: function() { wx.reLaunch({ url: '/pages/index/index' }) } })
   },
 
   onShareAppMessage() {
     var playlist = this.data.playlist
     var path = '/pages/index/index'
     if (playlist && playlist.id) {
-      path = '/pages/index/index?playlistId=' + playlist.id
+      path = playlistPath(playlist.id)
     }
     return {
       title: (this.data.userName || '用户') + '的死亡歌单',

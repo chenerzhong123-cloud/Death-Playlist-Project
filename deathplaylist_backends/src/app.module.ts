@@ -1,4 +1,4 @@
-import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -8,9 +8,6 @@ import { ShareModule } from './share/share.module';
 import { SeedModule } from './seed/seed.module';
 import { StatsModule } from './stats/stats.module';
 import { FriendsModule } from './friends/friends.module';
-import * as express from 'express';
-import { join } from 'path';
-import { existsSync } from 'fs';
 
 @Module({
   imports: [
@@ -30,16 +27,4 @@ import { existsSync } from 'fs';
     FriendsModule,
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    const staticPath = join(__dirname, '..', 'static');
-    if (existsSync(staticPath)) {
-      console.log('📂 Serving frontend from:', staticPath);
-      consumer
-        .apply(express.static(staticPath))
-        .forRoutes({ path: '*', method: RequestMethod.ALL });
-    } else {
-      console.log('⚠️ No static/ directory found at', staticPath);
-    }
-  }
-}
+export class AppModule {}
